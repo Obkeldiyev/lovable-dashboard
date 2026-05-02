@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import GridLayout, { WidthProvider } from "react-grid-layout";
+import GridLayout from "react-grid-layout";
+import { WidthProvider } from "react-grid-layout";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
