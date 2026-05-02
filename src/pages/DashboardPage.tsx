@@ -1,6 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import GridLayout from "react-grid-layout";
-import { WidthProvider } from "react-grid-layout";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -15,15 +14,29 @@ import { WIDGETS } from "@/features/dashboard/widgets";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
-const ResponsiveGrid = WidthProvider(GridLayout);
+function useContainerWidth() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [w, setW] = useState(1200);
+  useEffect(() => {
+    if (!ref.current) return;
+    const el = ref.current;
+    const ro = new ResizeObserver(([entry]) => setW(entry.contentRect.width));
+    ro.observe(el);
+    setW(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
+  return { ref, width: w };
+}
 
 export default function DashboardPage() {
   const dispatch = useAppDispatch();
   const { editMode, layout, widgets } = useAppSelector((s) => s.dashboard);
+  const { ref, width } = useContainerWidth();
 
   useEffect(() => { document.title = "Dashboard · VMS"; }, []);
 
   const available = ALL_WIDGETS.filter((w) => !widgets.includes(w));
+  const visibleLayout = layout.filter((l) => widgets.includes(l.i as never));
 
   return (
     <div>
@@ -71,32 +84,34 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <ResponsiveGrid
-        className={editMode ? "rgl-edit" : ""}
-        layout={layout.filter((l) => widgets.includes(l.i as never))}
-        cols={12}
-        rowHeight={48}
-        margin={[12, 12]}
-        isDraggable={editMode}
-        isResizable={editMode}
-        onLayoutChange={(l) => editMode && dispatch(setLayout(l as never))}
-        draggableCancel=".no-drag"
-      >
-        {widgets.map((w) => (
-          <div key={w} className="relative">
-            {editMode && (
-              <button
-                aria-label="Remove widget"
-                onClick={() => dispatch(removeWidget(w))}
-                className="no-drag absolute -right-2 -top-2 z-10 h-6 w-6 rounded-full bg-destructive text-destructive-foreground grid place-items-center shadow-md hover:scale-110 transition-transform"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            )}
-            <div className="h-full">{WIDGETS[w].render()}</div>
-          </div>
-        ))}
-      </ResponsiveGrid>
+      <div ref={ref}>
+        <GridLayout
+          width={width}
+          layout={visibleLayout}
+          cols={12}
+          rowHeight={48}
+          margin={[12, 12]}
+          isDraggable={editMode}
+          isResizable={editMode}
+          onLayoutChange={(l) => editMode && dispatch(setLayout(l as never))}
+          draggableCancel=".no-drag"
+        >
+          {widgets.map((w) => (
+            <div key={w} className="relative">
+              {editMode && (
+                <button
+                  aria-label="Remove widget"
+                  onClick={() => dispatch(removeWidget(w))}
+                  className="no-drag absolute -right-2 -top-2 z-10 h-6 w-6 rounded-full bg-destructive text-destructive-foreground grid place-items-center shadow-md hover:scale-110 transition-transform"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+              <div className="h-full">{WIDGETS[w].render()}</div>
+            </div>
+          ))}
+        </GridLayout>
+      </div>
     </div>
   );
 }
