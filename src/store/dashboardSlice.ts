@@ -1,5 +1,14 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { Layout } from "react-grid-layout";
+
+export type Layout = {
+  i: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  minW?: number;
+  minH?: number;
+};
 
 export type WidgetId =
   | "kpi-products"
