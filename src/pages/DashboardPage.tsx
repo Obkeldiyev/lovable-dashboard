@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import GridLayout from "react-grid-layout";
+import { useEffect } from "react";
+import { ReactGridLayout, WidthProvider } from "react-grid-layout/legacy";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -14,24 +14,11 @@ import { WIDGETS } from "@/features/dashboard/widgets";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
-function useContainerWidth() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [w, setW] = useState(1200);
-  useEffect(() => {
-    if (!ref.current) return;
-    const el = ref.current;
-    const ro = new ResizeObserver(([entry]) => setW(entry.contentRect.width));
-    ro.observe(el);
-    setW(el.clientWidth);
-    return () => ro.disconnect();
-  }, []);
-  return { ref, width: w };
-}
+const Grid = WidthProvider(ReactGridLayout);
 
 export default function DashboardPage() {
   const dispatch = useAppDispatch();
   const { editMode, layout, widgets } = useAppSelector((s) => s.dashboard);
-  const { ref, width } = useContainerWidth();
 
   useEffect(() => { document.title = "Dashboard · VMS"; }, []);
 
