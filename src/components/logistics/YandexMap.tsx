@@ -42,6 +42,7 @@ type Props = {
   route?: MapRoute | null;
   center?: { lat: number; lng: number };
   zoom?: number;
+  traffic?: boolean;
   onRouteInfo?: (info: { distanceKm: number; durationMin: number }) => void;
   className?: string;
 };
@@ -51,6 +52,7 @@ export function YandexMap({
   route,
   center,
   zoom = 11,
+  traffic = true,
   onRouteInfo,
   className,
 }: Props) {
@@ -73,7 +75,7 @@ export function YandexMap({
         mapRef.current = new ymaps.Map(ref.current, {
           center: [c.lat, c.lng],
           zoom,
-          controls: ["zoomControl", "geolocationControl", "trafficControl"],
+          controls: ["zoomControl", "geolocationControl", traffic ? "trafficControl" : ""].filter(Boolean) as string[],
         });
       })
       .catch((e) => setError(e.message));
