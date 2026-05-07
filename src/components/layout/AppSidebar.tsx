@@ -26,6 +26,8 @@ export const NAV = [
   { key: "cycleCounts", url: "/cycle-counts", icon: ScanBarcode, group: "ops" },
   { key: "ops", url: "/ops", icon: Workflow, group: "ops" },
   { key: "logistics", url: "/logistics", icon: MapPinned, group: "logistics" },
+  { key: "fleet", url: "/fleet", icon: Users, group: "logistics" },
+  { key: "shops", url: "/shops", icon: Store, group: "logistics" },
   { key: "driver", url: "/driver", icon: Navigation, group: "logistics" },
   { key: "notifications", url: "/notifications", icon: Bell, group: "system" },
   { key: "settings", url: "/settings/appearance", icon: Settings, group: "system" },
