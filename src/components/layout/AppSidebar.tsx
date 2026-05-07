@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Boxes, Package, Tags, FolderTree, Truck,
   Warehouse, ShoppingCart, ClipboardList, PackageCheck, Send,
-  ScanBarcode, Workflow, Bell, Settings,
+  ScanBarcode, Workflow, Bell, Settings, MapPinned, Navigation,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -25,6 +25,8 @@ export const NAV = [
   { key: "shipments", url: "/shipments", icon: Send, group: "ops" },
   { key: "cycleCounts", url: "/cycle-counts", icon: ScanBarcode, group: "ops" },
   { key: "ops", url: "/ops", icon: Workflow, group: "ops" },
+  { key: "logistics", url: "/logistics", icon: MapPinned, group: "logistics" },
+  { key: "driver", url: "/driver", icon: Navigation, group: "logistics" },
   { key: "notifications", url: "/notifications", icon: Bell, group: "system" },
   { key: "settings", url: "/settings/appearance", icon: Settings, group: "system" },
 ] as const;
@@ -33,6 +35,7 @@ const GROUPS = [
   { id: "main", label: "Main" },
   { id: "catalog", label: "Catalog" },
   { id: "ops", label: "Operations" },
+  { id: "logistics", label: "Logistics" },
   { id: "system", label: "System" },
 ] as const;
 
