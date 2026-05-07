@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Boxes, Package, Tags, FolderTree, Truck,
   Warehouse, ShoppingCart, ClipboardList, PackageCheck, Send,
-  ScanBarcode, Workflow, Bell, Settings,
+  ScanBarcode, Workflow, Bell, Settings, MapPinned, Navigation,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
