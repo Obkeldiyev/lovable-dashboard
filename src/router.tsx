@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import RoleRoute from "@/components/auth/RoleRoute";
 
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
 const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
@@ -19,6 +20,9 @@ const ShipmentsPage = lazy(() => import("@/pages/ShipmentsPage"));
 const CycleCountsPage = lazy(() => import("@/pages/CycleCountsPage"));
 const OpsPage = lazy(() => import("@/pages/OpsPage"));
 const NotificationsPage = lazy(() => import("@/pages/NotificationsPage"));
+const LogisticsPage = lazy(() => import("@/pages/LogisticsPage"));
+const DriverPage = lazy(() => import("@/pages/DriverPage"));
+const DriverNavigatePage = lazy(() => import("@/pages/DriverNavigatePage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 export function AppRouter() {
