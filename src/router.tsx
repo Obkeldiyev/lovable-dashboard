@@ -47,6 +47,11 @@ export function AppRouter() {
               <Route path="/shipments" element={<ShipmentsPage />} />
               <Route path="/cycle-counts" element={<CycleCountsPage />} />
               <Route path="/ops" element={<OpsPage />} />
+              <Route path="/logistics" element={<LogisticsPage />} />
+              <Route element={<RoleRoute allow={["driver", "admin"]} />}>
+                <Route path="/driver" element={<DriverPage />} />
+                <Route path="/driver/navigate/:id" element={<DriverNavigatePage />} />
+              </Route>
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/settings/appearance" element={<AppearancePage />} />
               <Route path="/settings" element={<Navigate to="/settings/appearance" replace />} />
