@@ -21,6 +21,9 @@ const CycleCountsPage = lazy(() => import("@/pages/CycleCountsPage"));
 const OpsPage = lazy(() => import("@/pages/OpsPage"));
 const NotificationsPage = lazy(() => import("@/pages/NotificationsPage"));
 const LogisticsPage = lazy(() => import("@/pages/LogisticsPage"));
+const LogisticsSettingsPage = lazy(() => import("@/pages/LogisticsSettingsPage"));
+const ShopsPage = lazy(() => import("@/pages/ShopsPage"));
+const FleetPage = lazy(() => import("@/pages/FleetPage"));
 const DriverPage = lazy(() => import("@/pages/DriverPage"));
 const DriverNavigatePage = lazy(() => import("@/pages/DriverNavigatePage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
@@ -48,12 +51,15 @@ export function AppRouter() {
               <Route path="/cycle-counts" element={<CycleCountsPage />} />
               <Route path="/ops" element={<OpsPage />} />
               <Route path="/logistics" element={<LogisticsPage />} />
+              <Route path="/fleet" element={<FleetPage />} />
+              <Route path="/shops" element={<ShopsPage />} />
               <Route element={<RoleRoute allow={["driver", "admin"]} />}>
                 <Route path="/driver" element={<DriverPage />} />
                 <Route path="/driver/navigate/:id" element={<DriverNavigatePage />} />
               </Route>
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/settings/appearance" element={<AppearancePage />} />
+              <Route path="/settings/logistics" element={<LogisticsSettingsPage />} />
               <Route path="/settings" element={<Navigate to="/settings/appearance" replace />} />
             </Route>
           </Route>
