@@ -2,9 +2,10 @@ import { configureStore } from "@reduxjs/toolkit";
 import { useDispatch, useSelector, type TypedUseSelectorHook } from "react-redux";
 import auth from "./authSlice";
 import dashboard from "./dashboardSlice";
+import preferences from "./preferencesSlice";
 
 export const store = configureStore({
-  reducer: { auth, dashboard },
+  reducer: { auth, dashboard, preferences },
 });
 
 export type RootState = ReturnType<typeof store.getState>;

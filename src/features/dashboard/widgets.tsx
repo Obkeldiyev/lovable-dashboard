@@ -28,6 +28,8 @@ function useStats() {
   return s;
 }
 
+const toList = <T,>(value: T[] | unknown): T[] => (Array.isArray(value) ? value : []);
+
 export function KpiProducts() {
   const s = useStats();
   return <Kpi label="Products" value={s?.totalProducts ?? "—"} icon={Boxes} />;
@@ -111,13 +113,13 @@ export function ChartPoStatus() {
 
 export function ListRecentActivity() {
   const [items, setItems] = useState<RecentActivity[]>([]);
-  useEffect(() => { dashboardApi.getRecentActivity().then(setItems); }, []);
+  useEffect(() => { dashboardApi.getRecentActivity().then((value) => setItems(toList<RecentActivity>(value))); }, []);
   return (
     <Card className="h-full overflow-hidden flex flex-col">
       <CardHeader><CardTitle className="text-sm">Recent activity</CardTitle></CardHeader>
       <CardContent className="flex-1 overflow-auto space-y-2">
         {items.length === 0 && <p className="text-xs text-muted-foreground">No recent activity</p>}
-        {items.map((a) => (
+        {toList<RecentActivity>(items).map((a) => (
           <div key={a.id} className="rounded-md border border-border p-2 text-xs">
             <div className="font-medium">{a.description}</div>
             <div className="text-muted-foreground">{a.actorName ?? "—"} · {new Date(a.createdAt).toLocaleString()}</div>
@@ -130,14 +132,14 @@ export function ListRecentActivity() {
 
 export function ListLowStock() {
   const [items, setItems] = useState<LowStockItem[]>([]);
-  useEffect(() => { dashboardApi.getLowStock().then(setItems); }, []);
+  useEffect(() => { dashboardApi.getLowStock().then((value) => setItems(toList<LowStockItem>(value))); }, []);
   return (
     <Card className="h-full overflow-hidden flex flex-col">
       <CardHeader><CardTitle className="text-sm">Low stock</CardTitle></CardHeader>
       <CardContent className="flex-1 overflow-auto">
         {items.length === 0 && <p className="text-xs text-muted-foreground">All good</p>}
         <ul className="divide-y divide-border text-xs">
-          {items.map((i) => (
+          {toList<LowStockItem>(items).map((i) => (
             <li key={i.id} className="flex items-center justify-between py-1.5">
               <span className="truncate">{i.productName}</span>
               <span className="text-muted-foreground">{i.onHand}/{i.reorderPoint}</span>
@@ -151,13 +153,13 @@ export function ListLowStock() {
 
 export function ListAlerts() {
   const [items, setItems] = useState<Alert[]>([]);
-  useEffect(() => { dashboardApi.getAlerts().then(setItems); }, []);
+  useEffect(() => { dashboardApi.getAlerts().then((value) => setItems(toList<Alert>(value))); }, []);
   return (
     <Card className="h-full overflow-hidden flex flex-col">
       <CardHeader><CardTitle className="text-sm">Alerts</CardTitle></CardHeader>
       <CardContent className="flex-1 overflow-auto space-y-2">
         {items.length === 0 && <p className="text-xs text-muted-foreground">No alerts</p>}
-        {items.map((a) => (
+        {toList<Alert>(items).map((a) => (
           <div key={a.id} className="rounded-md border border-border p-2 text-xs">
             <div className="flex items-center justify-between">
               <span className="font-medium">{a.title}</span>

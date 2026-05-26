@@ -7,6 +7,9 @@ import RoleRoute from "@/components/auth/RoleRoute";
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
 const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
 const AppearancePage = lazy(() => import("@/pages/AppearancePage"));
+const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
+const UsersPage = lazy(() => import("@/pages/UsersPage"));
+const PermissionsPage = lazy(() => import("@/pages/PermissionsPage"));
 const InventoryPage = lazy(() => import("@/pages/InventoryPage"));
 const ProductsPage = lazy(() => import("@/pages/ProductsPage"));
 const BrandsPage = lazy(() => import("@/pages/BrandsPage"));
@@ -60,7 +63,9 @@ export function AppRouter() {
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/settings/appearance" element={<AppearancePage />} />
               <Route path="/settings/logistics" element={<LogisticsSettingsPage />} />
-              <Route path="/settings" element={<Navigate to="/settings/appearance" replace />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/users" element={<UsersPage />} />
+              <Route path="/permissions" element={<PermissionsPage />} />
             </Route>
           </Route>
           <Route path="*" element={<NotFound />} />

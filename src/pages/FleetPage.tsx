@@ -5,153 +5,277 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { fleetApi, type Driver, type Vehicle } from "@/features/logistics/api";
-import { Plus, UserPlus, Car } from "lucide-react";
+import { useAppSelector } from "@/store";
+import { Plus, UserPlus, Car, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+const DRIVER_STATUS_COLOR: Record<string, string> = {
+  AVAILABLE:   "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+  ON_DELIVERY: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+  OFFLINE:     "bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400",
+  SUSPENDED:   "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+};
 
 export default function FleetPage() {
-  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const tenantId = useAppSelector((s) => s.auth.user?.tenantId);
+  const [drivers, setDrivers]   = useState<Driver[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [openD, setOpenD] = useState(false);
-  const [openV, setOpenV] = useState(false);
+  const [loading, setLoading]   = useState(true);
+  const [openD, setOpenD]       = useState(false);
+  const [openV, setOpenV]       = useState(false);
 
-  const load = () => {
-    fleetApi.drivers().then(setDrivers).catch(() => setDrivers([]));
-    fleetApi.vehicles().then(setVehicles).catch(() => setVehicles([]));
+  useEffect(() => { document.title = "Fleet · VMS"; }, []);
+
+  const load = async () => {
+    setLoading(true);
+    const params = tenantId ? { tenantId } : undefined;
+    await Promise.allSettled([
+      fleetApi.drivers(params).then(setDrivers).catch(() => setDrivers([])),
+      fleetApi.vehicles(params).then(setVehicles).catch(() => setVehicles([])),
+    ]);
+    setLoading(false);
   };
-  useEffect(load, []);
+
+  useEffect(() => { load(); }, [tenantId]);
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-2xl font-semibold tracking-tight">Fleet</h2>
-        <p className="text-sm text-muted-foreground">Manage drivers and vehicles.</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-semibold tracking-tight">Fleet</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">Manage drivers and vehicles.</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={load} className="gap-1.5">
+          <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+          Refresh
+        </Button>
       </div>
+
       <Tabs defaultValue="drivers">
         <TabsList>
-          <TabsTrigger value="drivers">Drivers</TabsTrigger>
-          <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
+          <TabsTrigger value="drivers">
+            Drivers
+            <Badge variant="secondary" className="ml-1.5 text-xs">{drivers.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="vehicles">
+            Vehicles
+            <Badge variant="secondary" className="ml-1.5 text-xs">{vehicles.length}</Badge>
+          </TabsTrigger>
         </TabsList>
+
         <TabsContent value="drivers" className="mt-4">
           <Card>
-            <CardHeader className="flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-base">Drivers ({drivers.length})</CardTitle>
-              <Button size="sm" onClick={() => setOpenD(true)} className="gap-2"><UserPlus className="h-4 w-4" /> Add driver</Button>
+            <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-base">Drivers</CardTitle>
+              <Button size="sm" onClick={() => setOpenD(true)} className="gap-1.5">
+                <UserPlus className="h-3.5 w-3.5" /> Add driver
+              </Button>
             </CardHeader>
             <CardContent className="p-0">
-              <ul className="divide-y">
-                {drivers.map((d) => (
-                  <li key={d.id} className="p-4 flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">{d.fullName}</div>
-                      <div className="text-xs text-muted-foreground">{d.phone ?? "—"} · {d.licenseNumber ?? ""}</div>
-                    </div>
-                    <Badge variant="outline">{d.status ?? "OFFLINE"}</Badge>
-                  </li>
-                ))}
-                {drivers.length === 0 && <li className="p-6 text-center text-sm text-muted-foreground">No drivers</li>}
-              </ul>
+              {loading ? (
+                <div className="space-y-2 p-4">
+                  {[...Array(3)].map((_, i) => <div key={i} className="h-14 rounded-lg bg-muted/40 animate-pulse" />)}
+                </div>
+              ) : drivers.length === 0 ? (
+                <p className="p-6 text-center text-sm text-muted-foreground">No drivers yet</p>
+              ) : (
+                <ul className="divide-y divide-border">
+                  {drivers.map((d) => (
+                    <li key={d.id} className="flex items-center justify-between px-4 py-3 hover:bg-accent/30 transition-colors">
+                      <div>
+                        <p className="font-medium text-sm">{d.fullName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {d.phone ?? "—"}
+                          {d.licenseNo && <span className="ml-2 font-mono">#{d.licenseNo}</span>}
+                        </p>
+                      </div>
+                      <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium", DRIVER_STATUS_COLOR[d.status ?? "OFFLINE"])}>
+                        {d.status ?? "OFFLINE"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
+
         <TabsContent value="vehicles" className="mt-4">
           <Card>
-            <CardHeader className="flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-base">Vehicles ({vehicles.length})</CardTitle>
-              <Button size="sm" onClick={() => setOpenV(true)} className="gap-2"><Car className="h-4 w-4" /> Add vehicle</Button>
+            <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-base">Vehicles</CardTitle>
+              <Button size="sm" onClick={() => setOpenV(true)} className="gap-1.5">
+                <Car className="h-3.5 w-3.5" /> Add vehicle
+              </Button>
             </CardHeader>
             <CardContent className="p-0">
-              <ul className="divide-y">
-                {vehicles.map((v) => (
-                  <li key={v.id} className="p-4 flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">{v.plateNumber}</div>
-                      <div className="text-xs text-muted-foreground">{v.type ?? "—"} · {v.capacityKg ? `${v.capacityKg} kg` : ""}</div>
-                    </div>
-                    <Badge variant={v.active === false ? "secondary" : "outline"}>{v.active === false ? "Inactive" : "Active"}</Badge>
-                  </li>
-                ))}
-                {vehicles.length === 0 && <li className="p-6 text-center text-sm text-muted-foreground">No vehicles</li>}
-              </ul>
+              {loading ? (
+                <div className="space-y-2 p-4">
+                  {[...Array(3)].map((_, i) => <div key={i} className="h-14 rounded-lg bg-muted/40 animate-pulse" />)}
+                </div>
+              ) : vehicles.length === 0 ? (
+                <p className="p-6 text-center text-sm text-muted-foreground">No vehicles yet</p>
+              ) : (
+                <ul className="divide-y divide-border">
+                  {vehicles.map((v) => (
+                    <li key={v.id} className="flex items-center justify-between px-4 py-3 hover:bg-accent/30 transition-colors">
+                      <div>
+                        <p className="font-medium text-sm font-mono">{v.plateNo}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {v.type ?? "—"}
+                          {v.capacityKg && <span className="ml-2">{v.capacityKg} kg</span>}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="text-xs">{v.type ?? "—"}</Badge>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
 
-      <DriverDialog open={openD} onOpenChange={setOpenD} onSaved={() => { setOpenD(false); load(); }} />
-      <VehicleDialog open={openV} onOpenChange={setOpenV} onSaved={() => { setOpenV(false); load(); }} />
+      <DriverDialog
+        open={openD}
+        tenantId={tenantId}
+        onOpenChange={setOpenD}
+        onSaved={() => { setOpenD(false); load(); }}
+      />
+      <VehicleDialog
+        open={openV}
+        tenantId={tenantId}
+        onOpenChange={setOpenV}
+        onSaved={() => { setOpenV(false); load(); }}
+      />
     </div>
   );
 }
 
-function DriverDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpenChange: (v: boolean) => void; onSaved: () => void }) {
-  const [f, setF] = useState<Partial<Driver>>({ status: "AVAILABLE" });
+function DriverDialog({
+  open, tenantId, onOpenChange, onSaved,
+}: { open: boolean; tenantId?: string; onOpenChange: (v: boolean) => void; onSaved: () => void }) {
+  const [f, setF] = useState({ fullName: "", phone: "", licenseNo: "", status: "AVAILABLE" });
+
   async function save() {
+    if (!f.fullName.trim()) return toast.error("Full name is required");
+    if (!f.phone.trim())    return toast.error("Phone is required");
     try {
-      if (!f.fullName) return toast.error("Name required");
-      await fleetApi.createDriver(f);
+      await fleetApi.createDriver({ ...f, tenantId } as any);
       toast.success("Driver added");
-      setF({ status: "AVAILABLE" });
+      setF({ fullName: "", phone: "", licenseNo: "", status: "AVAILABLE" });
       onSaved();
-    } catch (e: any) { toast.error(e?.response?.data?.error ?? e?.message); }
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error ?? e?.message ?? "Failed");
+    }
   }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader><DialogTitle>New driver</DialogTitle></DialogHeader>
-        <div className="grid gap-3">
-          <div><Label className="text-xs">Full name *</Label><Input value={f.fullName ?? ""} onChange={(e) => setF({ ...f, fullName: e.target.value })} /></div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><Label className="text-xs">Phone</Label><Input value={f.phone ?? ""} onChange={(e) => setF({ ...f, phone: e.target.value })} /></div>
-            <div><Label className="text-xs">License #</Label><Input value={f.licenseNumber ?? ""} onChange={(e) => setF({ ...f, licenseNumber: e.target.value })} /></div>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader><DialogTitle>New Driver</DialogTitle></DialogHeader>
+        <div className="grid gap-3 py-2">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Full name <span className="text-destructive">*</span></Label>
+            <Input value={f.fullName} onChange={(e) => setF({ ...f, fullName: e.target.value })} placeholder="John Doe" />
           </div>
-          <div>
-            <Label className="text-xs">Status</Label>
-            <Select value={f.status} onValueChange={(v: any) => setF({ ...f, status: v })}>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Phone <span className="text-destructive">*</span></Label>
+              <Input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="+998901234567" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">License No.</Label>
+              <Input value={f.licenseNo} onChange={(e) => setF({ ...f, licenseNo: e.target.value })} placeholder="AA1234567" />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Initial status</Label>
+            <Select value={f.status} onValueChange={(v) => setF({ ...f, status: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {["OFFLINE", "AVAILABLE", "ON_DELIVERY", "SUSPENDED"].map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                {["OFFLINE", "AVAILABLE", "ON_DELIVERY", "SUSPENDED"].map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
         </div>
-        <DialogFooter><Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button><Button onClick={save}>Save</Button></DialogFooter>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={save}>Save</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-function VehicleDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpenChange: (v: boolean) => void; onSaved: () => void }) {
-  const [f, setF] = useState<Partial<Vehicle>>({ type: "VAN", active: true });
+function VehicleDialog({
+  open, tenantId, onOpenChange, onSaved,
+}: { open: boolean; tenantId?: string; onOpenChange: (v: boolean) => void; onSaved: () => void }) {
+  const [f, setF] = useState({ plateNo: "", type: "VAN", capacityKg: "" });
+
   async function save() {
+    if (!f.plateNo.trim()) return toast.error("Plate number is required");
     try {
-      if (!f.plateNumber) return toast.error("Plate number required");
-      await fleetApi.createVehicle(f);
+      await fleetApi.createVehicle({
+        plateNo: f.plateNo,
+        type: f.type as any,
+        capacityKg: f.capacityKg ? Number(f.capacityKg) : undefined,
+        tenantId,
+      } as any);
       toast.success("Vehicle added");
-      setF({ type: "VAN", active: true });
+      setF({ plateNo: "", type: "VAN", capacityKg: "" });
       onSaved();
-    } catch (e: any) { toast.error(e?.response?.data?.error ?? e?.message); }
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error ?? e?.message ?? "Failed");
+    }
   }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader><DialogTitle>New vehicle</DialogTitle></DialogHeader>
-        <div className="grid gap-3">
-          <div><Label className="text-xs">Plate number *</Label><Input value={f.plateNumber ?? ""} onChange={(e) => setF({ ...f, plateNumber: e.target.value })} /></div>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader><DialogTitle>New Vehicle</DialogTitle></DialogHeader>
+        <div className="grid gap-3 py-2">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Plate number <span className="text-destructive">*</span></Label>
+            <Input value={f.plateNo} onChange={(e) => setF({ ...f, plateNo: e.target.value })} placeholder="01A123BC" className="font-mono" />
+          </div>
           <div className="grid grid-cols-2 gap-3">
-            <div>
+            <div className="space-y-1.5">
               <Label className="text-xs">Type</Label>
-              <Select value={f.type} onValueChange={(v: any) => setF({ ...f, type: v })}>
+              <Select value={f.type} onValueChange={(v) => setF({ ...f, type: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{["CAR", "VAN", "TRUCK", "BIKE"].map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                <SelectContent>
+                  {["CAR", "VAN", "TRUCK", "BIKE", "MOTORCYCLE"].map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </div>
-            <div><Label className="text-xs">Capacity (kg)</Label><Input type="number" value={f.capacityKg ?? ""} onChange={(e) => setF({ ...f, capacityKg: Number(e.target.value) })} /></div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Capacity (kg)</Label>
+              <Input
+                type="number"
+                value={f.capacityKg}
+                onChange={(e) => setF({ ...f, capacityKg: e.target.value })}
+                placeholder="1000"
+              />
+            </div>
           </div>
         </div>
-        <DialogFooter><Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button><Button onClick={save}>Save</Button></DialogFooter>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={save}>Save</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

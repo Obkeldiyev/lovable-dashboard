@@ -2,75 +2,128 @@
 @tailwind components;
 @tailwind utilities;
 
+body {
+  @apply bg-background text-foreground;
+  overflow-x: hidden;
+}
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --background: 190 10% 90%;
+    --foreground: 222 47% 7%;
+    --card: 190 100% 99%;
+    --card-foreground: 222 47% 7%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --popover-foreground: 222 47% 7%;
+    --primary: 220 80% 57%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 245 80% 51%;
+    --secondary: 214 32% 91%;
+    --secondary-foreground: 222 47% 11%;
+    --secondary-hover: 214 32% 85%;
+    --muted: 214 32% 95%;
+    --muted-foreground: 215 16% 47%;
+    --muted-hover: 214 32% 89%;
+    --accent: 214 32% 91%;
+    --accent-foreground: 222 47% 11%;
+    --accent-hover: 214 32% 85%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-hover: 0 72% 44%;
+    --success: 142 71% 45%;
+    --success-foreground: 144 80% 96%;
+    --success-hover: 142 71% 38%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 32 94% 8%;
+    --warning-hover: 38 92% 43%;
+    --info: 199 89% 42%;
+    --info-foreground: 204 100% 97%;
+    --info-hover: 199 89% 36%;
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
+    --ring: 245 80% 57%;
+    --sidebar-background: 222 47% 7%;
+    --sidebar-foreground: 214 32% 91%;
+    --sidebar-primary: 245 80% 65%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 28% 17%;
+    --sidebar-accent-foreground: 214 32% 91%;
+    --sidebar-border: 215 28% 13%;
+    --sidebar-ring: 245 80% 57%;
+    --chart-1: 245 80% 57%;
+    --chart-2: 199 89% 42%;
+    --chart-3: 142 71% 45%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 0 72% 51%;
+    --radius: 0.625rem;
   }
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 222 47% 5%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 222 47% 9%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: 222 47% 7%;
     --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
+    --primary: 220 74% 63%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 245 74% 56%;
+    --secondary: 215 28% 17%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
+    --secondary-hover: 215 28% 12%;
+    --muted: 215 28% 17%;
+    --muted-foreground: 215 16% 55%;
+    --muted-hover: 215 28% 12%;
+    --accent: 215 28% 20%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --accent-hover: 215 28% 14%;
+    --destructive: 0 63% 40%;
+    --destructive-foreground: 0 85% 97%;
+    --destructive-hover: 0 63% 34%;
+    --success: 142 70% 38%;
+    --success-foreground: 144 70% 92%;
+    --success-hover: 142 70% 32%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 32 94% 8%;
+    --warning-hover: 38 92% 43%;
+    --info: 199 89% 48%;
+    --info-foreground: 204 100% 97%;
+    --info-hover: 199 89% 40%;
+    --border: 215 28% 17%;
+    --input: 215 28% 17%;
+    --ring: 245 74% 63%;
+    --sidebar-background: 222 47% 4%;
+    --sidebar-foreground: 214 32% 88%;
+    --sidebar-primary: 245 74% 63%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 215 28% 10%;
+    --sidebar-accent-foreground: 214 32% 88%;
+    --sidebar-border: 215 28% 8%;
+    --sidebar-ring: 245 74% 63%;
+    --chart-1: 245 74% 63%;
+    --chart-2: 199 89% 52%;
+    --chart-3: 142 70% 45%;
+    --chart-4: 38 92% 52%;
+    --chart-5: 0 72% 56%;
+    --radius: 0.625rem;
   }
 }
 
 @layer base {
   * { @apply border-border; }
-  body { @apply bg-background text-foreground; font-family: Inter, system-ui, sans-serif; }
+  body {
+    @apply bg-background text-foreground;
+    font-family: Inter, system-ui, sans-serif;
+    min-height: 100vh;
+  }
+  /* Prevent layout overflow */
+  #root {
+    width: 100%;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
 }
 
-/* View transition for theme toggle (Telegram-style circular reveal) */
+/* ─── View Transition: Telegram-style circular reveal ─── */
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
@@ -79,28 +132,126 @@
 ::view-transition-old(root) { z-index: 1; }
 ::view-transition-new(root) { z-index: 999; }
 
-/* Editable grid visual cue */
-.rgl-edit .react-grid-item {
-  outline: 1px dashed hsl(var(--primary) / 0.4);
+/* Fallback for browsers without View Transitions API */
+.theme-transitioning,
+.theme-transitioning * {
+  transition:
+    background-color 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.55s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+/* ─── Smooth interactive transitions ─── */
+button, a, [role="button"] {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+input, select, textarea {
+  transition-property: border-color, box-shadow, background-color;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── Entrance animations ─── */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(14px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+.animate-fade-in   { animation: fade-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-scale-in  { animation: scale-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-slide-in  { animation: slide-in-right 0.28s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-slide-up  { animation: slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.45); }
+
+/* ─── Focus ring ─── */
+:focus-visible {
+  outline: 2px solid hsl(var(--ring));
   outline-offset: 2px;
+  border-radius: calc(var(--radius) - 2px);
+}
+
+/* ─── Card hover ─── */
+.card-hover {
+  transition: box-shadow 0.22s ease, transform 0.22s ease;
+}
+.card-hover:hover {
+  box-shadow: 0 6px 24px hsl(var(--foreground) / 0.07);
+  transform: translateY(-1px);
+}
+
+/* ─── Dashboard grid ─── */
+.rgl-edit .react-grid-item {
+  outline: 1.5px dashed hsl(var(--primary) / 0.45);
+  outline-offset: 3px;
   border-radius: var(--radius);
 }
 .react-grid-item.react-grid-placeholder {
-  background: hsl(var(--primary) / 0.15) !important;
+  background: hsl(var(--primary) / 0.12) !important;
   border-radius: var(--radius);
 }
 .react-grid-item > .react-resizable-handle::after {
   border-color: hsl(var(--muted-foreground)) !important;
 }
 
-/* Subtle entrance */
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: none; }
+/* ─── Table improvements ─── */
+table {
+  border-collapse: collapse;
+  width: 100%;
 }
-@keyframes scale-in {
-  from { opacity: 0; transform: scale(0.96); }
-  to { opacity: 1; transform: scale(1); }
+thead th {
+  white-space: nowrap;
 }
-.animate-fade-in { animation: fade-in 0.25s ease-out both; }
-.animate-scale-in { animation: scale-in 0.22s ease-out both; }
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ─── Input improvements ─── */
+input[type="color"] {
+  padding: 2px;
+  cursor: pointer;
+}
+input[type="range"] {
+  cursor: pointer;
+}
+
+/* ─── Badge pulse for live indicators ─── */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.live-dot {
+  animation: pulse-dot 1.8s ease-in-out infinite;
+}
+
+/* ─── Map container ─── */
+.yandex-map-container {
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+/* ─── Sidebar transition ─── */
+[data-sidebar="sidebar"] {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}

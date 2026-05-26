@@ -33,18 +33,18 @@ export const PRESETS: Record<PresetId, { light: ThemeTokens; dark: ThemeTokens; 
   default: {
     label: "Default",
     light: {
-      background: "0 0% 100%", foreground: "222 47% 11%",
-      primary: "222 47% 11%", primaryForeground: "210 40% 98%",
-      accent: "210 40% 96%", accentForeground: "222 47% 11%",
-      muted: "210 40% 96%", border: "214 32% 91%",
-      radius: "0.5", font: "Inter",
+      background: "190 10% 90%", foreground: "222 47% 7%",
+      primary: "220 80% 57%", primaryForeground: "0 0% 100%",
+      accent: "214 32% 91%", accentForeground: "222 47% 11%",
+      muted: "214 32% 95%", border: "214 20% 88%",
+      radius: "0.625", font: "Inter",
     },
     dark: {
-      background: "222 47% 6%", foreground: "210 40% 98%",
-      primary: "210 40% 98%", primaryForeground: "222 47% 11%",
-      accent: "217 33% 17%", accentForeground: "210 40% 98%",
-      muted: "217 33% 17%", border: "217 33% 17%",
-      radius: "0.5", font: "Inter",
+      background: "222 47% 5%", foreground: "210 40% 96%",
+      primary: "220 74% 63%", primaryForeground: "0 0% 100%",
+      accent: "215 28% 20%", accentForeground: "210 40% 96%",
+      muted: "215 28% 17%", border: "215 28% 17%",
+      radius: "0.625", font: "Inter",
     },
   },
   ocean: {
@@ -155,6 +155,10 @@ function load(): ThemeState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
+    const simpleTheme = localStorage.getItem("theme") as ThemeMode | null;
+    if (simpleTheme === "light" || simpleTheme === "dark") {
+      return { mode: simpleTheme, preset: "default", custom: null };
+    }
   } catch {}
   const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
   return { mode: prefersDark ? "dark" : "light", preset: "default", custom: null };
@@ -170,12 +174,16 @@ function applyTokens(state: ThemeState) {
   root.style.setProperty("--foreground", tokens.foreground);
   root.style.setProperty("--primary", tokens.primary);
   root.style.setProperty("--primary-foreground", tokens.primaryForeground);
+  root.style.setProperty("--primary-hover", state.mode === "dark" ? "245 74% 56%" : "245 80% 51%");
   root.style.setProperty("--accent", tokens.accent);
   root.style.setProperty("--accent-foreground", tokens.accentForeground);
+  root.style.setProperty("--accent-hover", state.mode === "dark" ? "215 28% 14%" : "214 32% 85%");
   root.style.setProperty("--secondary", tokens.accent);
   root.style.setProperty("--secondary-foreground", tokens.accentForeground);
+  root.style.setProperty("--secondary-hover", state.mode === "dark" ? "215 28% 12%" : "214 32% 85%");
   root.style.setProperty("--muted", tokens.muted);
-  root.style.setProperty("--muted-foreground", tokens.foreground);
+  root.style.setProperty("--muted-foreground", state.mode === "dark" ? "215 16% 55%" : "215 16% 47%");
+  root.style.setProperty("--muted-hover", state.mode === "dark" ? "215 28% 12%" : "214 32% 89%");
   root.style.setProperty("--card", tokens.background);
   root.style.setProperty("--card-foreground", tokens.foreground);
   root.style.setProperty("--popover", tokens.background);
@@ -183,6 +191,26 @@ function applyTokens(state: ThemeState) {
   root.style.setProperty("--border", tokens.border);
   root.style.setProperty("--input", tokens.border);
   root.style.setProperty("--ring", tokens.primary);
+  root.style.setProperty("--destructive", state.mode === "dark" ? "0 63% 40%" : "0 72% 51%");
+  root.style.setProperty("--destructive-foreground", state.mode === "dark" ? "0 85% 97%" : "0 0% 100%");
+  root.style.setProperty("--destructive-hover", state.mode === "dark" ? "0 63% 34%" : "0 72% 44%");
+  root.style.setProperty("--success", state.mode === "dark" ? "142 70% 38%" : "142 71% 45%");
+  root.style.setProperty("--success-foreground", state.mode === "dark" ? "144 70% 92%" : "144 80% 96%");
+  root.style.setProperty("--success-hover", state.mode === "dark" ? "142 70% 32%" : "142 71% 38%");
+  root.style.setProperty("--warning", "38 92% 50%");
+  root.style.setProperty("--warning-foreground", "32 94% 8%");
+  root.style.setProperty("--warning-hover", "38 92% 43%");
+  root.style.setProperty("--info", state.mode === "dark" ? "199 89% 48%" : "199 89% 42%");
+  root.style.setProperty("--info-foreground", "204 100% 97%");
+  root.style.setProperty("--info-hover", state.mode === "dark" ? "199 89% 40%" : "199 89% 36%");
+  root.style.setProperty("--sidebar-background", state.mode === "dark" ? "222 47% 4%" : "222 47% 7%");
+  root.style.setProperty("--sidebar-foreground", state.mode === "dark" ? "214 32% 88%" : "214 32% 91%");
+  root.style.setProperty("--sidebar-primary", state.mode === "dark" ? "245 74% 63%" : "245 80% 65%");
+  root.style.setProperty("--sidebar-primary-foreground", "0 0% 100%");
+  root.style.setProperty("--sidebar-accent", state.mode === "dark" ? "215 28% 10%" : "215 28% 17%");
+  root.style.setProperty("--sidebar-accent-foreground", state.mode === "dark" ? "214 32% 88%" : "214 32% 91%");
+  root.style.setProperty("--sidebar-border", state.mode === "dark" ? "215 28% 8%" : "215 28% 13%");
+  root.style.setProperty("--sidebar-ring", state.mode === "dark" ? "245 74% 63%" : "245 80% 57%");
   root.style.setProperty("--radius", `${tokens.radius}rem`);
   document.body.style.fontFamily = `${tokens.font}, system-ui, sans-serif`;
 }
@@ -192,9 +220,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     applyTokens(state);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {}
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        localStorage.setItem("theme", state.mode);
+      } catch {}
   }, [state]);
 
   const runWithTransition = useCallback(
@@ -203,7 +232,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         startViewTransition?: (cb: () => void) => { ready: Promise<void> };
       };
       if (!doc.startViewTransition) {
+        // Fallback: CSS class-based fade transition
+        document.documentElement.classList.add("theme-transitioning");
         mutate();
+        setTimeout(() => {
+          document.documentElement.classList.remove("theme-transitioning");
+        }, 600);
         return;
       }
       const x = originX ?? window.innerWidth - 32;
@@ -222,7 +256,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             ],
           },
           {
-            duration: 480,
+            duration: 900,
             easing: "cubic-bezier(0.22, 1, 0.36, 1)",
             pseudoElement: "::view-transition-new(root)",
           },

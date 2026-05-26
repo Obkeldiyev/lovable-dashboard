@@ -2,7 +2,7 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 
 const BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
-  "http://localhost:9000";
+  "http://localhost:9300";
 
 export const api = axios.create({
   baseURL: BASE_URL,
@@ -50,12 +50,14 @@ async function refreshToken(): Promise<string | null> {
   const r = tokenStore.refresh;
   if (!r) return null;
   try {
-    const res = await axios.post(`${BASE_URL}/api/auth/refresh`, {
+    // Backend uses /api/auth/refresh-token
+    const res = await axios.post(`${BASE_URL}/api/auth/refresh-token`, {
       refreshToken: r,
     });
-    const access = res.data?.accessToken ?? res.data?.token;
+    const payload = res.data?.data ?? res.data;
+    const access = payload?.accessToken ?? payload?.token;
     if (access) {
-      tokenStore.set(access, res.data?.refreshToken ?? r);
+      tokenStore.set(access, payload?.refreshToken ?? r);
       return access;
     }
   } catch {

@@ -1,21 +1,27 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { DataPageScaffold } from "@/components/data/EditableTable";
+import { DataPageScaffold, type Column } from "@/components/data/EditableTable";
 
 type Loader = () => Promise<Array<Record<string, unknown> & { id: string | number }>>;
 
 export function makeListLoader(path: string): Loader {
   return async () => {
-    try {
-      const { data } = await api.get(path);
-      const arr = Array.isArray(data) ? data : data?.items ?? data?.data ?? [];
-      return arr.map((x: Record<string, unknown>, i: number) => ({
-        id: (x.id as string | number) ?? i,
-        ...x,
-      }));
-    } catch {
-      return [];
+    const { data } = await api.get(path);
+    // Handle various response shapes: array, { data: [] }, { items: [] }, { data: { items: [] } }
+    let arr: unknown[] = [];
+    if (Array.isArray(data)) {
+      arr = data;
+    } else if (Array.isArray(data?.data)) {
+      arr = data.data;
+    } else if (Array.isArray(data?.items)) {
+      arr = data.items;
+    } else if (Array.isArray(data?.data?.items)) {
+      arr = data.data.items;
     }
+    return arr.map((x: unknown, i: number) => {
+      const obj = x as Record<string, unknown>;
+      return { id: (obj.id as string | number) ?? i, ...obj };
+    });
   };
 }
 
@@ -25,11 +31,18 @@ export function makePatcher(path: string) {
   };
 }
 
+export function makeDeleter(path: string) {
+  return async (id: string | number) => {
+    await api.delete(`${path}/${id}`);
+  };
+}
+
 export function GenericPage(props: {
   title: string;
   description?: string;
   path: string;
-  columns: { key: string; label: string; editable?: boolean; type?: "text" | "number" }[];
+  columns: Column<Record<string, unknown> & { id: string | number }>[];
+  deletable?: boolean;
 }) {
   const [loaderKey] = useState(() => props.path);
   useEffect(() => { document.title = `${props.title} · VMS`; }, [props.title]);
@@ -40,6 +53,7 @@ export function GenericPage(props: {
       fetcher={makeListLoader(loaderKey)}
       columns={props.columns}
       saveEndpoint={makePatcher(loaderKey)}
+      deleteEndpoint={props.deletable !== false ? makeDeleter(loaderKey) : undefined}
     />
   );
 }

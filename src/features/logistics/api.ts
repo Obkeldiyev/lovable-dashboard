@@ -2,13 +2,18 @@ import axios from "axios";
 import { tokenStore } from "@/lib/api";
 
 const BASE =
-  (import.meta.env.VITE_LOGISTICS_BASE_URL as string | undefined) ??
-  "http://localhost:9100";
+  (import.meta.env.VITE_LOGISTICS_BASE_URL as string | undefined) !== undefined
+    ? (import.meta.env.VITE_LOGISTICS_BASE_URL as string)
+    : "http://localhost:9100";
 
-export const logisticsBaseUrl = () => BASE;
+// In production (empty VITE_LOGISTICS_BASE_URL), Nginx proxies /lapi/* → logistics backend
+// In development, we hit the logistics backend directly on port 9100
+const LOGISTICS_PREFIX = BASE === "" ? "/lapi" : "";
+
+export const logisticsBaseUrl = () => BASE || window.location.origin;
 
 export const logisticsApi = axios.create({
-  baseURL: BASE,
+  baseURL: BASE || window.location.origin,
   headers: { "Content-Type": "application/json" },
 });
 
@@ -57,96 +62,96 @@ export type Delivery = {
 
 export type Driver = {
   id: string; tenantId?: string;
-  fullName: string; phone?: string; licenseNumber?: string;
+  fullName: string; phone?: string; licenseNo?: string;
   status?: "OFFLINE" | "AVAILABLE" | "ON_DELIVERY" | "SUSPENDED";
   rating?: number; createdAt?: string;
 };
 
 export type Vehicle = {
   id: string; tenantId?: string;
-  plateNumber: string; type?: "CAR" | "VAN" | "TRUCK" | "BIKE";
-  capacityKg?: number; active?: boolean; createdAt?: string;
+  plateNo: string; type?: "CAR" | "VAN" | "TRUCK" | "BIKE" | "MOTORCYCLE";
+  capacityKg?: number; createdAt?: string;
 };
 
 export const deliveriesApi = {
   async list(params?: { tenantId?: string; status?: string }) {
-    const { data } = await logisticsApi.get("/api/deliveries", { params });
+    const { data } = await logisticsApi.get(`${LOGISTICS_PREFIX}/api/deliveries`, { params });
     return unwrap<Delivery[]>(data);
   },
   async get(id: string) {
-    const { data } = await logisticsApi.get(`/api/deliveries/${id}`);
+    const { data } = await logisticsApi.get(`${LOGISTICS_PREFIX}/api/deliveries/${id}`);
     return unwrap<Delivery & { route?: any }>(data);
   },
   async setStatus(id: string, status: DeliveryStatus) {
-    const { data } = await logisticsApi.patch(`/api/deliveries/${id}/status`, { status });
+    const { data } = await logisticsApi.patch(`${LOGISTICS_PREFIX}/api/deliveries/${id}/status`, { status });
     return unwrap<Delivery>(data);
   },
   async createProof(id: string, body: { signatureUrl?: string; photoUrl?: string; receivedBy?: string; note?: string }) {
-    const { data } = await logisticsApi.post(`/api/deliveries/${id}/proof`, body);
+    const { data } = await logisticsApi.post(`${LOGISTICS_PREFIX}/api/deliveries/${id}/proof`, body);
     return unwrap(data);
   },
 };
 
 export const dispatchApi = {
   async board(params?: { tenantId?: string }) {
-    const { data } = await logisticsApi.get("/api/dispatch/board", { params });
+    const { data } = await logisticsApi.get(`${LOGISTICS_PREFIX}/api/dispatch/board`, { params });
     return unwrap<any>(data);
   },
   async controlTower(params?: { tenantId?: string }) {
-    const { data } = await logisticsApi.get("/api/dispatch/control-tower", { params });
+    const { data } = await logisticsApi.get(`${LOGISTICS_PREFIX}/api/dispatch/control-tower`, { params });
     return unwrap<any>(data);
   },
   async createDelivery(body: any) {
-    const { data } = await logisticsApi.post("/api/dispatch/deliveries", body);
+    const { data } = await logisticsApi.post(`${LOGISTICS_PREFIX}/api/dispatch/deliveries`, body);
     return unwrap<Delivery>(data);
   },
   async assign(deliveryId: string, body: { driverId: string; vehicleId?: string }) {
-    const { data } = await logisticsApi.post(`/api/dispatch/deliveries/${deliveryId}/assign`, body);
+    const { data } = await logisticsApi.post(`${LOGISTICS_PREFIX}/api/dispatch/deliveries/${deliveryId}/assign`, body);
     return unwrap<Delivery>(data);
   },
   async routeDetails(deliveryId: string) {
-    const { data } = await logisticsApi.get(`/api/dispatch/deliveries/${deliveryId}/route`);
+    const { data } = await logisticsApi.get(`${LOGISTICS_PREFIX}/api/dispatch/deliveries/${deliveryId}/route`);
     return unwrap<any>(data);
   },
 };
 
 export const fleetApi = {
   async drivers(params?: { tenantId?: string; status?: string }) {
-    const { data } = await logisticsApi.get("/api/fleet/drivers", { params });
+    const { data } = await logisticsApi.get(`${LOGISTICS_PREFIX}/api/fleet/drivers`, { params });
     return unwrap<Driver[]>(data);
   },
-  async createDriver(body: Partial<Driver>) {
-    const { data } = await logisticsApi.post("/api/fleet/drivers", body);
+  async createDriver(body: Partial<Driver> & { tenantId?: string }) {
+    const { data } = await logisticsApi.post(`${LOGISTICS_PREFIX}/api/fleet/drivers`, body);
     return unwrap<Driver>(data);
   },
   async vehicles(params?: { tenantId?: string }) {
-    const { data } = await logisticsApi.get("/api/fleet/vehicles", { params });
+    const { data } = await logisticsApi.get(`${LOGISTICS_PREFIX}/api/fleet/vehicles`, { params });
     return unwrap<Vehicle[]>(data);
   },
-  async createVehicle(body: Partial<Vehicle>) {
-    const { data } = await logisticsApi.post("/api/fleet/vehicles", body);
+  async createVehicle(body: Partial<Vehicle> & { tenantId?: string }) {
+    const { data } = await logisticsApi.post(`${LOGISTICS_PREFIX}/api/fleet/vehicles`, body);
     return unwrap<Vehicle>(data);
   },
   async assign(body: { driverId: string; vehicleId: string }) {
-    const { data } = await logisticsApi.post("/api/fleet/assignments", body);
+    const { data } = await logisticsApi.post(`${LOGISTICS_PREFIX}/api/fleet/assignments`, body);
     return unwrap(data);
   },
 };
 
 export const trackingApi = {
   async timeline(deliveryId: string) {
-    const { data } = await logisticsApi.get(`/api/tracking/deliveries/${deliveryId}/tracking`);
+    const { data } = await logisticsApi.get(`${LOGISTICS_PREFIX}/api/tracking/deliveries/${deliveryId}/tracking`);
     return unwrap<any[]>(data);
   },
   async postLocation(deliveryId: string, body: {
     lat: number; lng: number; speedKmh?: number;
     eventType?: string; status?: string; note?: string; capturedAt?: string;
   }) {
-    const { data } = await logisticsApi.post(`/api/tracking/deliveries/${deliveryId}/tracking`, body);
+    const { data } = await logisticsApi.post(`${LOGISTICS_PREFIX}/api/tracking/deliveries/${deliveryId}/tracking`, body);
     return unwrap(data);
   },
   async postBatch(deliveryId: string, points: Array<{ lat: number; lng: number; capturedAt?: string }>) {
-    const { data } = await logisticsApi.post(`/api/tracking/deliveries/${deliveryId}/tracking/batch`, { points });
+    const { data } = await logisticsApi.post(`${LOGISTICS_PREFIX}/api/tracking/deliveries/${deliveryId}/tracking/batch`, { points });
     return unwrap(data);
   },
 };
@@ -154,12 +159,22 @@ export const trackingApi = {
 export function tenantStreamUrl(tenantId: string) {
   const t = tokenStore.access;
   const q = t ? `?token=${encodeURIComponent(t)}` : "";
-  return `${BASE}/api/live/tenants/${tenantId}${q}`;
+  // In production (BASE=""), Nginx proxies /live/* → logistics /api/live/*
+  const base = BASE === "" ? "" : BASE;
+  const path = BASE === ""
+    ? `/live/tenants/${tenantId}`
+    : `/api/live/tenants/${tenantId}`;
+  return `${base}${path}${q}`;
 }
+
 export function deliveryStreamUrl(deliveryId: string) {
   const t = tokenStore.access;
   const q = t ? `?token=${encodeURIComponent(t)}` : "";
-  return `${BASE}/api/live/deliveries/${deliveryId}${q}`;
+  const base = BASE === "" ? "" : BASE;
+  const path = BASE === ""
+    ? `/live/deliveries/${deliveryId}`
+    : `/api/live/deliveries/${deliveryId}`;
+  return `${base}${path}${q}`;
 }
 
 // Shops live on the core backend (not logistics)
