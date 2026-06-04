@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary brand color (matches --primary in the app) -->
+    <color name="colorPrimary">#3b82f6</color>
+    <!-- Dark background (matches dark mode --background) -->
+    <color name="colorPrimaryDark">#0f172a</color>
+    <!-- Accent -->
+    <color name="colorAccent">#3b82f6</color>
+    <!-- Splash / status bar background -->
+    <color name="colorSplash">#0f172a</color>
+</resources>

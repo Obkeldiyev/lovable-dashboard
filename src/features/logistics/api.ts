@@ -1,19 +1,21 @@
 import axios from "axios";
 import { tokenStore } from "@/lib/api";
 
+// In production: VITE_LOGISTICS_BASE_URL is empty → same-origin, Nginx routes /lapi/* → backend :9100
+// In development: VITE_LOGISTICS_BASE_URL=http://localhost:9100 (set in .env)
 const BASE =
-  (import.meta.env.VITE_LOGISTICS_BASE_URL as string | undefined) !== undefined
-    ? (import.meta.env.VITE_LOGISTICS_BASE_URL as string)
-    : "http://localhost:9100";
+  (import.meta.env.VITE_LOGISTICS_BASE_URL as string | undefined) ??
+  "";
 
-// In production (empty VITE_LOGISTICS_BASE_URL), Nginx proxies /lapi/* → logistics backend
-// In development, we hit the logistics backend directly on port 9100
+// In production (BASE=""), use /lapi prefix so Nginx can proxy to logistics backend
+// In development (BASE="http://localhost:9100"), hit the backend directly with /api prefix
 const LOGISTICS_PREFIX = BASE === "" ? "/lapi" : "";
 
 export const logisticsBaseUrl = () => BASE || window.location.origin;
 
 export const logisticsApi = axios.create({
-  baseURL: BASE || window.location.origin,
+  // Empty baseURL = same-origin (relative URLs), Nginx handles the routing
+  baseURL: BASE,
   headers: { "Content-Type": "application/json" },
 });
 

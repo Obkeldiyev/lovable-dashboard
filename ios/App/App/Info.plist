@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- ── App identity ─────────────────────────────────────────────── -->
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>VMS</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+
+	<!-- ── Device requirements ──────────────────────────────────────── -->
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>armv7</string>
+	</array>
+
+	<!-- ── Orientation — portrait only on iPhone ────────────────────── -->
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<!-- iPad supports all orientations -->
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+
+	<!-- ── Status bar ───────────────────────────────────────────────── -->
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<true/>
+	<key>UIStatusBarStyle</key>
+	<string>UIStatusBarStyleLightContent</string>
+
+	<!-- ── Launch screen ────────────────────────────────────────────── -->
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+
+	<!-- ── Location permissions (driver GPS tracking) ───────────────── -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>VMS needs your location to track deliveries and show your position on the map.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>VMS needs background location access so drivers can be tracked during active deliveries.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>VMS needs background location access so drivers can be tracked during active deliveries.</string>
+
+	<!-- ── Camera (proof of delivery photos) ────────────────────────── -->
+	<key>NSCameraUsageDescription</key>
+	<string>VMS needs camera access to capture proof-of-delivery photos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>VMS needs photo library access to attach delivery proof images.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>VMS needs to save delivery proof photos to your photo library.</string>
+
+	<!-- ── Notifications ────────────────────────────────────────────── -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+		<string>location</string>
+		<string>fetch</string>
+	</array>
+
+	<!-- ── Network security (allow Yandex Maps) ─────────────────────── -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>yandex.ru</key>
+			<dict>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<false/>
+			</dict>
+			<key>yandex.net</key>
+			<dict>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<false/>
+			</dict>
+		</dict>
+	</dict>
+
+	<!-- ── Face ID (future biometric login) ─────────────────────────── -->
+	<key>NSFaceIDUsageDescription</key>
+	<string>VMS can use Face ID for quick and secure login.</string>
+
+	<!-- ── Capacitor scheme ──────────────────────────────────────────── -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.vms.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.vms.app</string>
+			</array>
+		</dict>
+	</array>
+
+	<!-- ── Queries (for share sheet) ────────────────────────────────── -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>https</string>
+		<string>mailto</string>
+		<string>tel</string>
+	</array>
+</dict>
+</plist>

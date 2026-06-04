@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Allow HTTPS to your production server -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">vms.app</domain>
+    </domain-config>
+
+    <!-- Allow HTTP only in debug builds (for local dev server) -->
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
+
+    <!-- Yandex Maps CDN -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">yandex.ru</domain>
+        <domain includeSubdomains="true">yandex.net</domain>
+        <domain includeSubdomains="true">api-maps.yandex.ru</domain>
+    </domain-config>
+</network-security-config>

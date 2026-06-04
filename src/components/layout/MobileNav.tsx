@@ -19,7 +19,10 @@ export function MobileNav() {
   const [open, setOpen] = useState(false);
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/95 backdrop-blur-md md:hidden safe-area-bottom">
+    <nav
+      className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/95 backdrop-blur-md md:hidden"
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+    >
       <ul className="grid grid-cols-5 h-16">
         {PRIMARY.map((i) => {
           const active = pathname === i.url || (i.url !== "/dashboard" && pathname.startsWith(i.url));

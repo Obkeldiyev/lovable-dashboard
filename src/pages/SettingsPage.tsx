@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   PanelLeft, Monitor, Palette, RotateCcw, Check,
   Bell, Globe, Eye, Zap, SlidersHorizontal, Layout,
-  Rows3, Clock, DollarSign, Sun, Moon, ArrowRight,
+  Rows3, Clock, DollarSign, Sun, Moon, ArrowRight, Smartphone,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store";
 import {
@@ -24,6 +24,7 @@ import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import { isNative, platform, scheduleLocalNotification } from "@/lib/native";
 
 /* ── Color helpers ── */
 function hslToHex(hsl: string): string {
@@ -67,7 +68,6 @@ const COLOR_KEYS: { key: keyof ThemeTokens; label: string }[] = [
   { key: "border",     label: "Border" },
 ];
 
-/* ── Row helper ── */
 function Row({ label, description, children }: {
   label: string; description?: string; children: React.ReactNode;
 }) {
@@ -88,7 +88,7 @@ export default function SettingsPage() {
   const { mode, preset, custom, setPreset, setCustom, toggleMode } = useTheme();
   const { i18n } = useTranslation();
   const [searchParams] = useSearchParams();
-  const defaultTab = searchParams.get("tab") ?? "layout";
+  const defaultTab = searchParams.get("tab") ?? (isNative ? "mobile" : "layout");
 
   useEffect(() => { document.title = "Settings · VMS"; }, []);
 
@@ -114,138 +114,243 @@ export default function SettingsPage() {
     toast.success("All settings reset to defaults");
   }
 
+  // How many tabs to show
+  const tabCount = isNative ? 5 : 4;
+
   return (
     <div className="max-w-3xl space-y-5">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Your personal workspace preferences — saved automatically and synced across sessions.
+          Your personal workspace preferences — saved automatically.
+          {isNative && <span className="ml-1 text-primary font-medium">({platform})</span>}
         </p>
       </div>
 
       <Tabs defaultValue={defaultTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 h-10">
-          <TabsTrigger value="layout"     className="gap-1.5 text-xs"><Layout          className="h-3.5 w-3.5" />Layout</TabsTrigger>
-          <TabsTrigger value="display"    className="gap-1.5 text-xs"><Eye             className="h-3.5 w-3.5" />Display</TabsTrigger>
-          <TabsTrigger value="appearance" className="gap-1.5 text-xs"><Palette         className="h-3.5 w-3.5" />Appearance</TabsTrigger>
-          <TabsTrigger value="regional"   className="gap-1.5 text-xs"><SlidersHorizontal className="h-3.5 w-3.5" />Regional</TabsTrigger>
+        <TabsList className={cn("grid w-full h-10", `grid-cols-${tabCount}`)}>
+          {isNative && (
+            <TabsTrigger value="mobile" className="gap-1 text-xs">
+              <Smartphone className="h-3.5 w-3.5" />
+              Mobile
+            </TabsTrigger>
+          )}
+          <TabsTrigger value="layout"     className="gap-1 text-xs"><Layout          className="h-3.5 w-3.5" />Layout</TabsTrigger>
+          <TabsTrigger value="display"    className="gap-1 text-xs"><Eye             className="h-3.5 w-3.5" />Display</TabsTrigger>
+          <TabsTrigger value="appearance" className="gap-1 text-xs"><Palette         className="h-3.5 w-3.5" />Theme</TabsTrigger>
+          <TabsTrigger value="regional"   className="gap-1 text-xs"><SlidersHorizontal className="h-3.5 w-3.5" />Regional</TabsTrigger>
         </TabsList>
 
-        {/* ══════════════════════════════════════════
-            TAB 1 — LAYOUT
-        ══════════════════════════════════════════ */}
-        <TabsContent value="layout" className="space-y-4 animate-fade-in">
-
-          {/* Navigation style */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <PanelLeft className="h-4 w-4" /> Navigation Style
-              </CardTitle>
-              <CardDescription>Choose how you move around the app.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                {(["navbar", "sidebar"] as NavMode[]).map((nav) => (
-                  <button
-                    key={nav}
-                    onClick={() => {
-                      dispatch(setNavMode(nav));
-                      syncToBackend({ ...prefs, navMode: nav });
-                      toast.success(`Switched to ${nav} navigation`);
-                    }}
-                    className={cn(
-                      "relative rounded-xl border-2 p-4 text-left transition-all duration-200 hover:shadow-md",
-                      prefs.navMode === nav
-                        ? "border-primary bg-primary/5 shadow-sm"
-                        : "border-border hover:border-primary/40",
-                    )}
-                  >
-                    {prefs.navMode === nav && (
-                      <span className="absolute top-2.5 right-2.5 h-5 w-5 rounded-full bg-primary grid place-items-center">
-                        <Check className="h-3 w-3 text-primary-foreground" />
-                      </span>
-                    )}
-                    <div className="mb-3">
-                      {nav === "navbar"
-                        ? <Monitor className="h-9 w-9 text-muted-foreground" />
-                        : <PanelLeft className="h-9 w-9 text-muted-foreground" />}
-                    </div>
-                    <p className="font-semibold capitalize text-sm">{nav}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {nav === "navbar" ? "Horizontal top bar with dropdowns" : "Collapsible left sidebar"}
-                    </p>
-                  </button>
-                ))}
-              </div>
-
-              {prefs.navMode === "sidebar" && (
-                <div className="space-y-1.5 pt-1">
-                  <Label className="text-sm">Sidebar default state</Label>
-                  <Select
-                    value={prefs.sidebarVariant}
-                    onValueChange={(v) => handleUpdate({ sidebarVariant: v as UserPreferences["sidebarVariant"] })}
-                  >
-                    <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="expanded">Expanded — labels visible</SelectItem>
-                      <SelectItem value="icon">Icon only — compact</SelectItem>
-                      <SelectItem value="collapsed">Collapsed — hidden by default</SelectItem>
-                    </SelectContent>
-                  </Select>
+        {/* ══ MOBILE TAB (native only) ══ */}
+        {isNative && (
+          <TabsContent value="mobile" className="space-y-4 animate-fade-in">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Smartphone className="h-4 w-4" /> Device Info
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Platform</span>
+                  <Badge variant="secondary" className="capitalize">{platform}</Badge>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">App version</span>
+                  <span className="font-mono text-xs">1.0.0</span>
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Dashboard */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Bell className="h-4 w-4" /> Notifications
+                </CardTitle>
+                <CardDescription>Push and local notification settings.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Row label="Push notifications" description="Receive alerts when the app is closed">
+                  <Switch
+                    checked={prefs.desktopNotifications}
+                    onCheckedChange={async (v) => {
+                      if (v) {
+                        const { PushNotifications } = await import("@capacitor/push-notifications");
+                        const perm = await PushNotifications.requestPermissions();
+                        if (perm.receive !== "granted") {
+                          toast.error("Notifications blocked — enable in device settings");
+                          return;
+                        }
+                        await PushNotifications.register();
+                      }
+                      handleUpdate({ desktopNotifications: v });
+                    }}
+                  />
+                </Row>
+                <Separator />
+                <Row label="Sound alerts" description="Play a sound for new notifications">
+                  <Switch checked={prefs.soundAlerts} onCheckedChange={(v) => handleUpdate({ soundAlerts: v })} />
+                </Row>
+                <Separator />
+                <div className="pt-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => scheduleLocalNotification({
+                      id: 1,
+                      title: "VMS Test",
+                      body: "Notifications are working correctly!",
+                    }).then(() => toast.success("Test notification sent"))}
+                  >
+                    <Bell className="h-3.5 w-3.5" /> Send test notification
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Haptic Feedback</CardTitle>
+                <CardDescription>Vibration on button taps and actions.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Row label="Haptic feedback" description="Vibrate on interactions">
+                  <Switch
+                    checked={(prefs as any).hapticFeedback ?? true}
+                    onCheckedChange={(v) => handleUpdate({ hapticFeedback: v } as any)}
+                  />
+                </Row>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Display</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Row label="Keep screen on" description="Prevent screen from sleeping while app is open">
+                  <Switch
+                    checked={(prefs as any).keepScreenOn ?? false}
+                    onCheckedChange={(v) => handleUpdate({ keepScreenOn: v } as any)}
+                  />
+                </Row>
+                <Separator />
+                <Row label="Reduce motion" description="Minimize animations (saves battery)">
+                  <Switch
+                    checked={!prefs.animationsEnabled}
+                    onCheckedChange={(v) => handleUpdate({ animationsEnabled: !v })}
+                  />
+                </Row>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">GPS & Location</CardTitle>
+                <CardDescription>
+                  Configure GPS in <Link to="/settings/logistics" className="text-primary underline">Logistics Settings</Link>.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" size="sm" asChild className="gap-2">
+                  <Link to="/settings/logistics">
+                    Logistics Settings <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+        {/* ══ LAYOUT TAB ══ */}
+        <TabsContent value="layout" className="space-y-4 animate-fade-in">
+          {!isNative && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <PanelLeft className="h-4 w-4" /> Navigation Style
+                </CardTitle>
+                <CardDescription>Choose how you move around the app.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  {(["navbar", "sidebar"] as NavMode[]).map((nav) => (
+                    <button
+                      key={nav}
+                      onClick={() => {
+                        dispatch(setNavMode(nav));
+                        syncToBackend({ ...prefs, navMode: nav });
+                        toast.success(`Switched to ${nav}`);
+                      }}
+                      className={cn(
+                        "relative rounded-xl border-2 p-4 text-left transition-all duration-200 hover:shadow-md",
+                        prefs.navMode === nav ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/40",
+                      )}
+                    >
+                      {prefs.navMode === nav && (
+                        <span className="absolute top-2.5 right-2.5 h-5 w-5 rounded-full bg-primary grid place-items-center">
+                          <Check className="h-3 w-3 text-primary-foreground" />
+                        </span>
+                      )}
+                      <div className="mb-3">
+                        {nav === "navbar" ? <Monitor className="h-9 w-9 text-muted-foreground" /> : <PanelLeft className="h-9 w-9 text-muted-foreground" />}
+                      </div>
+                      <p className="font-semibold capitalize text-sm">{nav}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {nav === "navbar" ? "Horizontal top bar" : "Collapsible left sidebar"}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+                {prefs.navMode === "sidebar" && (
+                  <div className="space-y-1.5 pt-1">
+                    <Label className="text-sm">Sidebar default state</Label>
+                    <Select value={prefs.sidebarVariant} onValueChange={(v) => handleUpdate({ sidebarVariant: v as UserPreferences["sidebarVariant"] })}>
+                      <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="expanded">Expanded — labels visible</SelectItem>
+                        <SelectItem value="icon">Icon only</SelectItem>
+                        <SelectItem value="collapsed">Collapsed — hidden</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Layout className="h-4 w-4" /> Dashboard Widgets
-              </CardTitle>
-              <CardDescription>
-                Drag, resize, add or remove widgets to build your perfect overview.
-              </CardDescription>
+              <CardTitle className="flex items-center gap-2 text-base"><Layout className="h-4 w-4" /> Dashboard Widgets</CardTitle>
+              <CardDescription>Drag, resize, add or remove widgets.</CardDescription>
             </CardHeader>
             <CardContent>
               <Button variant="outline" size="sm" asChild className="gap-2">
-                <Link to="/dashboard">
-                  Customize Dashboard <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
+                <Link to="/dashboard">Customize Dashboard <ArrowRight className="h-3.5 w-3.5" /></Link>
               </Button>
             </CardContent>
           </Card>
-
-          {/* Logistics settings shortcut */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Logistics & Map</CardTitle>
-              <CardDescription>GPS tracking, map zoom, traffic layer, and more.</CardDescription>
+              <CardDescription>GPS tracking, map zoom, traffic layer.</CardDescription>
             </CardHeader>
             <CardContent>
               <Button variant="outline" size="sm" asChild className="gap-2">
-                <Link to="/settings/logistics">
-                  Logistics Settings <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
+                <Link to="/settings/logistics">Logistics Settings <ArrowRight className="h-3.5 w-3.5" /></Link>
               </Button>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* ══════════════════════════════════════════
-            TAB 2 — DISPLAY
-        ══════════════════════════════════════════ */}
+        {/* ══ DISPLAY TAB ══ */}
         <TabsContent value="display" className="space-y-4 animate-fade-in">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Eye className="h-4 w-4" /> Interface
-              </CardTitle>
-              <CardDescription>Control spacing, headers, and UI density.</CardDescription>
+              <CardTitle className="flex items-center gap-2 text-base"><Eye className="h-4 w-4" /> Interface</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Row label="Compact mode" description="Tighter padding and smaller gaps throughout">
+              <Row label="Compact mode" description="Tighter padding throughout">
                 <Switch checked={prefs.compactMode} onCheckedChange={(v) => handleUpdate({ compactMode: v })} />
               </Row>
               <Separator />
@@ -253,7 +358,7 @@ export default function SettingsPage() {
                 <Switch checked={prefs.stickyHeader} onCheckedChange={(v) => handleUpdate({ stickyHeader: v })} />
               </Row>
               <Separator />
-              <Row label="Show breadcrumbs" description="Navigation path shown in sidebar mode">
+              <Row label="Show breadcrumbs" description="Navigation path in sidebar mode">
                 <Switch checked={prefs.showBreadcrumbs} onCheckedChange={(v) => handleUpdate({ showBreadcrumbs: v })} />
               </Row>
               <Separator />
@@ -266,26 +371,16 @@ export default function SettingsPage() {
               </Row>
             </CardContent>
           </Card>
-
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Rows3 className="h-4 w-4" /> Tables
-              </CardTitle>
-              <CardDescription>Row density and pagination defaults.</CardDescription>
+              <CardTitle className="flex items-center gap-2 text-base"><Rows3 className="h-4 w-4" /> Tables</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label className="text-sm">Row size</Label>
                 <div className="flex gap-2">
                   {(["sm", "md", "lg"] as const).map((size) => (
-                    <Button
-                      key={size}
-                      size="sm"
-                      variant={prefs.tableRowSize === size ? "default" : "outline"}
-                      onClick={() => handleUpdate({ tableRowSize: size })}
-                      className="w-16"
-                    >
+                    <Button key={size} size="sm" variant={prefs.tableRowSize === size ? "default" : "outline"} onClick={() => handleUpdate({ tableRowSize: size })} className="w-16">
                       {size.toUpperCase()}
                     </Button>
                   ))}
@@ -294,46 +389,31 @@ export default function SettingsPage() {
               <Separator />
               <div className="space-y-2">
                 <Label className="text-sm">Default page size — <strong>{prefs.defaultPageSize}</strong> rows</Label>
-                <Slider
-                  min={10} max={100} step={5}
-                  value={[prefs.defaultPageSize]}
-                  onValueChange={([v]) => handleUpdate({ defaultPageSize: v })}
-                  className="max-w-xs"
-                />
-                <p className="text-xs text-muted-foreground">How many rows to show per page in all tables.</p>
+                <Slider min={10} max={100} step={5} value={[prefs.defaultPageSize]} onValueChange={([v]) => handleUpdate({ defaultPageSize: v })} className="max-w-xs" />
               </div>
             </CardContent>
           </Card>
-
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Zap className="h-4 w-4" /> Performance
-              </CardTitle>
+              <CardTitle className="flex items-center gap-2 text-base"><Zap className="h-4 w-4" /> Performance</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Row label="Auto-refresh data" description="Refresh page data in the background every 30s">
+              <Row label="Auto-refresh data" description="Refresh page data every 30s">
                 <Switch checked={prefs.autoRefresh} onCheckedChange={(v) => handleUpdate({ autoRefresh: v })} />
               </Row>
               <Separator />
-              <Row label="Reduce motion" description="Disable animations (accessibility / low-power)">
+              <Row label="Reduce motion" description="Disable animations">
                 <Switch checked={!prefs.animationsEnabled} onCheckedChange={(v) => handleUpdate({ animationsEnabled: !v })} />
               </Row>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* ══════════════════════════════════════════
-            TAB 3 — APPEARANCE
-        ══════════════════════════════════════════ */}
+        {/* ══ APPEARANCE TAB ══ */}
         <TabsContent value="appearance" className="space-y-4 animate-fade-in">
-
-          {/* Dark / Light mode */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Palette className="h-4 w-4" /> Color Mode
-              </CardTitle>
+              <CardTitle className="flex items-center gap-2 text-base"><Palette className="h-4 w-4" /> Color Mode</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-3">
@@ -365,11 +445,10 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Color presets */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Color Presets</CardTitle>
-              <CardDescription>Pick a built-in palette. You can further customize below.</CardDescription>
+              <CardDescription>Pick a built-in palette.</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -388,8 +467,7 @@ export default function SettingsPage() {
                       <p className="text-sm font-semibold mb-2">{PRESETS[id].label}</p>
                       <div className="flex gap-1.5">
                         {[p.primary, p.accent, p.background, p.foreground].map((c, i) => (
-                          <span key={i} className="h-5 w-5 rounded-full border border-black/10"
-                            style={{ background: `hsl(${c})` }} />
+                          <span key={i} className="h-5 w-5 rounded-full border border-black/10" style={{ background: `hsl(${c})` }} />
                         ))}
                       </div>
                     </button>
@@ -399,7 +477,6 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Custom colors */}
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -407,12 +484,7 @@ export default function SettingsPage() {
                   <CardTitle className="text-base">Custom Colors</CardTitle>
                   <CardDescription>Override individual color tokens.</CardDescription>
                 </div>
-                {custom && (
-                  <Badge variant="secondary" className="text-xs gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary inline-block" />
-                    Custom active
-                  </Badge>
-                )}
+                {custom && <Badge variant="secondary" className="text-xs">Custom active</Badge>}
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -432,20 +504,8 @@ export default function SettingsPage() {
                   </div>
                 ))}
                 <div className="space-y-2 sm:col-span-2">
-                  <Label className="text-xs text-muted-foreground">
-                    Border radius — <strong>{tokens.radius}rem</strong>
-                  </Label>
-                  <Slider
-                    value={[parseFloat(tokens.radius)]}
-                    min={0} max={1.5} step={0.05}
-                    onValueChange={(v) => updateColor("radius", String(v[0]))}
-                    className="max-w-xs"
-                  />
-                  <div className="flex gap-2 text-xs text-muted-foreground">
-                    <span>Sharp</span>
-                    <span className="flex-1 text-center">↔</span>
-                    <span>Rounded</span>
-                  </div>
+                  <Label className="text-xs text-muted-foreground">Border radius — <strong>{tokens.radius}rem</strong></Label>
+                  <Slider value={[parseFloat(tokens.radius)]} min={0} max={1.5} step={0.05} onValueChange={(v) => updateColor("radius", String(v[0]))} className="max-w-xs" />
                 </div>
               </div>
               {custom && (
@@ -457,24 +517,16 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        {/* ══════════════════════════════════════════
-            TAB 4 — REGIONAL / PREFERENCES
-        ══════════════════════════════════════════ */}
+        {/* ══ REGIONAL TAB ══ */}
         <TabsContent value="regional" className="space-y-4 animate-fade-in">
-
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Globe className="h-4 w-4" /> Language
-              </CardTitle>
+              <CardTitle className="flex items-center gap-2 text-base"><Globe className="h-4 w-4" /> Language</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-1.5">
                 <Label className="text-sm">Interface language</Label>
-                <Select
-                  value={prefs.language}
-                  onValueChange={(v) => { handleUpdate({ language: v }); i18n.changeLanguage(v); }}
-                >
+                <Select value={prefs.language} onValueChange={(v) => { handleUpdate({ language: v }); i18n.changeLanguage(v); }}>
                   <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="en">🇺🇸 English</SelectItem>
@@ -488,18 +540,13 @@ export default function SettingsPage() {
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Clock className="h-4 w-4" /> Date & Time
-              </CardTitle>
+              <CardTitle className="flex items-center gap-2 text-base"><Clock className="h-4 w-4" /> Date & Time</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label className="text-sm">Date format</Label>
-                  <Select
-                    value={prefs.dateFormat}
-                    onValueChange={(v) => handleUpdate({ dateFormat: v as UserPreferences["dateFormat"] })}
-                  >
+                  <Select value={prefs.dateFormat} onValueChange={(v) => handleUpdate({ dateFormat: v as UserPreferences["dateFormat"] })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
@@ -510,10 +557,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm">Time format</Label>
-                  <Select
-                    value={prefs.timeFormat}
-                    onValueChange={(v) => handleUpdate({ timeFormat: v as UserPreferences["timeFormat"] })}
-                  >
+                  <Select value={prefs.timeFormat} onValueChange={(v) => handleUpdate({ timeFormat: v as UserPreferences["timeFormat"] })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="24h">24-hour (14:30)</SelectItem>
@@ -524,18 +568,14 @@ export default function SettingsPage() {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-sm">Timezone</Label>
-                <Select
-                  value={prefs.timezone}
-                  onValueChange={(v) => handleUpdate({ timezone: v })}
-                >
+                <Select value={prefs.timezone} onValueChange={(v) => handleUpdate({ timezone: v })}>
                   <SelectTrigger className="w-64"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="UTC">UTC</SelectItem>
                     <SelectItem value="Asia/Tashkent">Asia/Tashkent (UTC+5)</SelectItem>
                     <SelectItem value="Europe/Moscow">Europe/Moscow (UTC+3)</SelectItem>
-                    <SelectItem value="Europe/London">Europe/London (UTC+0/+1)</SelectItem>
-                    <SelectItem value="America/New_York">America/New_York (UTC-5/-4)</SelectItem>
-                    <SelectItem value="America/Los_Angeles">America/Los_Angeles (UTC-8/-7)</SelectItem>
+                    <SelectItem value="Europe/London">Europe/London</SelectItem>
+                    <SelectItem value="America/New_York">America/New_York</SelectItem>
                     <SelectItem value="Asia/Dubai">Asia/Dubai (UTC+4)</SelectItem>
                   </SelectContent>
                 </Select>
@@ -545,46 +585,36 @@ export default function SettingsPage() {
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <DollarSign className="h-4 w-4" /> Currency
-              </CardTitle>
+              <CardTitle className="flex items-center gap-2 text-base"><DollarSign className="h-4 w-4" /> Currency</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-1.5">
-                <Label className="text-sm">Display currency</Label>
-                <Select
-                  value={prefs.currency}
-                  onValueChange={(v) => handleUpdate({ currency: v })}
-                >
-                  <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="USD">🇺🇸 USD — US Dollar</SelectItem>
-                    <SelectItem value="UZS">🇺🇿 UZS — Uzbek Som</SelectItem>
-                    <SelectItem value="RUB">🇷🇺 RUB — Russian Ruble</SelectItem>
-                    <SelectItem value="EUR">🇪🇺 EUR — Euro</SelectItem>
-                    <SelectItem value="GBP">🇬🇧 GBP — British Pound</SelectItem>
-                    <SelectItem value="KZT">🇰🇿 KZT — Kazakhstani Tenge</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <Select value={prefs.currency} onValueChange={(v) => handleUpdate({ currency: v })}>
+                <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USD">🇺🇸 USD — US Dollar</SelectItem>
+                  <SelectItem value="UZS">🇺🇿 UZS — Uzbek Som</SelectItem>
+                  <SelectItem value="RUB">🇷🇺 RUB — Russian Ruble</SelectItem>
+                  <SelectItem value="EUR">🇪🇺 EUR — Euro</SelectItem>
+                  <SelectItem value="GBP">🇬🇧 GBP — British Pound</SelectItem>
+                  <SelectItem value="KZT">🇰🇿 KZT — Kazakhstani Tenge</SelectItem>
+                </SelectContent>
+              </Select>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Bell className="h-4 w-4" /> Notifications
-              </CardTitle>
+              <CardTitle className="flex items-center gap-2 text-base"><Bell className="h-4 w-4" /> Notifications</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Row label="Desktop notifications" description="Browser push notifications for alerts">
+              <Row label="Desktop notifications" description="Browser push notifications">
                 <Switch
                   checked={prefs.desktopNotifications}
                   onCheckedChange={(v) => {
                     if (v && "Notification" in window) {
                       Notification.requestPermission().then((p) => {
                         if (p === "granted") handleUpdate({ desktopNotifications: true });
-                        else toast.error("Browser notifications blocked");
+                        else toast.error("Notifications blocked in browser settings");
                       });
                     } else {
                       handleUpdate({ desktopNotifications: v });
@@ -599,23 +629,19 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Reset */}
           <Card className="border-destructive/30">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base text-destructive">
                 <RotateCcw className="h-4 w-4" /> Reset All Settings
               </CardTitle>
-              <CardDescription>
-                Restore every setting to its default value. Your data is not affected.
-              </CardDescription>
+              <CardDescription>Restore every setting to its default value.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button variant="destructive" size="sm" onClick={handleReset}>
-                Reset all settings
-              </Button>
+              <Button variant="destructive" size="sm" onClick={handleReset}>Reset all settings</Button>
             </CardContent>
           </Card>
         </TabsContent>
+
       </Tabs>
     </div>
   );

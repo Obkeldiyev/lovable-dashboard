@@ -1,8 +1,10 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 
+// In production: VITE_API_BASE_URL is empty → same-origin, Nginx routes /api/* → backend :9300
+// In development: VITE_API_BASE_URL=http://localhost:9300 (set in .env)
 const BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
-  "http://localhost:9300";
+  "";
 
 export const api = axios.create({
   baseURL: BASE_URL,
