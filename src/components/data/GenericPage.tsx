@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { DataPageScaffold, type Column } from "@/components/data/EditableTable";
+import { type CreateDialogConfig } from "@/components/data/CreateDialog";
 
 type Loader = () => Promise<Array<Record<string, unknown> & { id: string | number }>>;
 
 export function makeListLoader(path: string): Loader {
   return async () => {
     const { data } = await api.get(path);
-    // Handle various response shapes: array, { data: [] }, { items: [] }, { data: { items: [] } }
     let arr: unknown[] = [];
     if (Array.isArray(data)) {
       arr = data;
@@ -43,6 +43,7 @@ export function GenericPage(props: {
   path: string;
   columns: Column<Record<string, unknown> & { id: string | number }>[];
   deletable?: boolean;
+  createConfig?: CreateDialogConfig;
 }) {
   const [loaderKey] = useState(() => props.path);
   useEffect(() => { document.title = `${props.title} · VMS`; }, [props.title]);
@@ -54,6 +55,7 @@ export function GenericPage(props: {
       columns={props.columns}
       saveEndpoint={makePatcher(loaderKey)}
       deleteEndpoint={props.deletable !== false ? makeDeleter(loaderKey) : undefined}
+      createConfig={props.createConfig}
     />
   );
 }

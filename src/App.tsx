@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { store } from "@/store";
 import { AppRouter } from "@/router";
 import { useStatusBar, useNetwork } from "@/hooks/useNative";
+import { usePreferencesSync } from "@/hooks/usePreferencesSync";
 import { isNative } from "@/lib/native";
 import "@/lib/i18n";
 
@@ -27,6 +28,9 @@ function AppInner() {
 
   // Show offline banner when network drops
   const connected = useNetwork();
+
+  // Debounced sync of all preferences + theme to the backend, per user
+  usePreferencesSync();
 
   return (
     <>

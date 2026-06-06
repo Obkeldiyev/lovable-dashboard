@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,6 @@ import {
   type NavMode, type UserPreferences,
 } from "@/store/preferencesSlice";
 import { PRESETS, useTheme, type PresetId, type ThemeTokens } from "@/components/theme/ThemeProvider";
-import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -99,13 +98,10 @@ export default function SettingsPage() {
     setCustom({ ...(custom ?? {}), [k]: v });
   }
 
-  const syncToBackend = useCallback(async (p: UserPreferences) => {
-    try { await api.put("/api/preferences/me", { settings: p }); } catch { /* silent */ }
-  }, []);
-
+  // usePreferencesSync in App.tsx handles debounced backend saves automatically.
+  // Here we just dispatch to Redux (which also persists to localStorage instantly).
   function handleUpdate(patch: Partial<UserPreferences>) {
     dispatch(updatePreferences(patch));
-    syncToBackend({ ...prefs, ...patch });
   }
 
   function handleReset() {
@@ -113,9 +109,6 @@ export default function SettingsPage() {
     setCustom(null);
     toast.success("All settings reset to defaults");
   }
-
-  // How many tabs to show
-  const tabCount = isNative ? 5 : 4;
 
   return (
     <div className="max-w-3xl space-y-5">
@@ -128,7 +121,7 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue={defaultTab} className="space-y-4">
-        <TabsList className={cn("grid w-full h-10", `grid-cols-${tabCount}`)}>
+        <TabsList className={cn("grid w-full h-10", isNative ? "grid-cols-5" : "grid-cols-4")}>
           {isNative && (
             <TabsTrigger value="mobile" className="gap-1 text-xs">
               <Smartphone className="h-3.5 w-3.5" />
@@ -280,7 +273,6 @@ export default function SettingsPage() {
                       key={nav}
                       onClick={() => {
                         dispatch(setNavMode(nav));
-                        syncToBackend({ ...prefs, navMode: nav });
                         toast.success(`Switched to ${nav}`);
                       }}
                       className={cn(

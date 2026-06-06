@@ -145,6 +145,8 @@ type Ctx = ThemeState & {
   toggleMode: (originX?: number, originY?: number) => void;
   setPreset: (p: PresetId) => void;
   setCustom: (c: Partial<ThemeTokens> | null) => void;
+  /** Load a full theme state snapshot from the backend (called after login) */
+  loadTheme: (snapshot: Partial<ThemeState>) => void;
 };
 
 const ThemeCtx = createContext<Ctx | null>(null);
@@ -287,9 +289,23 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  const loadTheme = useCallback(
+    (snapshot: Partial<ThemeState>) => {
+      setState((s) => {
+        const next: ThemeState = {
+          mode:   snapshot.mode   ?? s.mode,
+          preset: snapshot.preset ?? s.preset,
+          custom: snapshot.custom !== undefined ? snapshot.custom : s.custom,
+        };
+        return next;
+      });
+    },
+    [],
+  );
+
   const value = useMemo<Ctx>(
-    () => ({ ...state, setMode, toggleMode, setPreset, setCustom }),
-    [state, setMode, toggleMode, setPreset, setCustom],
+    () => ({ ...state, setMode, toggleMode, setPreset, setCustom, loadTheme }),
+    [state, setMode, toggleMode, setPreset, setCustom, loadTheme],
   );
 
   return <ThemeCtx.Provider value={value}>{children}</ThemeCtx.Provider>;

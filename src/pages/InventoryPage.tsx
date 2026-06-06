@@ -5,15 +5,17 @@ export default function InventoryPage() {
     <GenericPage
       title="Inventory"
       description="Stock on hand across all warehouses"
-      path="/api/inventory"
+      path="/api/inventory/balances"
+      deletable={false}
       columns={[
-        { key: "product", label: "Product", render: (v: any) => v?.name ?? v?.sku ?? "—" },
-        { key: "warehouse", label: "Warehouse", render: (v: any) => v?.name ?? "—" },
-        { key: "qtyOnHand", label: "On Hand", type: "number" },
-        { key: "qtyReserved", label: "Reserved", type: "number" },
-        { key: "qtyAvailable", label: "Available", type: "number" },
-        { key: "updatedAt", label: "Updated", render: (v: any) => v ? new Date(v).toLocaleDateString() : "—" },
+        { key: "product",      label: "Product",   render: (v: any) => v?.name ?? v?.sku ?? "—" },
+        { key: "warehouse",    label: "Warehouse",  render: (v: any) => v?.name ?? "—" },
+        { key: "qtyOnHand",    label: "On Hand",    type: "number" },
+        { key: "qtyReserved",  label: "Reserved",   type: "number" },
+        { key: "qtyAvailable", label: "Available",  type: "number" },
+        { key: "updatedAt",    label: "Updated",    render: (v: any) => v ? new Date(v).toLocaleDateString() : "—" },
       ]}
+      // No createConfig — inventory balances are created automatically via movements/receivings
     />
   );
 }

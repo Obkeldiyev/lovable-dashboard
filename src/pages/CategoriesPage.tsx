@@ -7,11 +7,19 @@ export default function CategoriesPage() {
       description="Product category tree"
       path="/api/categories"
       columns={[
-        { key: "name",      label: "Name",   editable: true },
-        { key: "parent",    label: "Parent", render: (v: any) => v?.name ?? "—" },
-        { key: "path",      label: "Path",   render: (v: any) => v ?? "—" },
-        { key: "createdAt", label: "Created",render: (v: any) => v ? new Date(v).toLocaleDateString() : "—" },
+        { key: "name",      label: "Name",    editable: true },
+        { key: "parent",    label: "Parent",  render: (v: any) => v?.name ?? "—" },
+        { key: "path",      label: "Path",    render: (v: any) => v ?? "—" },
+        { key: "createdAt", label: "Created", render: (v: any) => v ? new Date(v).toLocaleDateString() : "—" },
       ]}
+      createConfig={{
+        title: "Category",
+        postUrl: "/api/categories",
+        fields: [
+          { key: "name", label: "Name", required: true },
+          { key: "path", label: "Path", placeholder: "e.g. Electronics / Phones" },
+        ],
+      }}
     />
   );
 }

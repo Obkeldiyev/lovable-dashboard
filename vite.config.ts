@@ -21,12 +21,12 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         // Split vendor chunks for better caching
-        manualChunks: {
-          "react-vendor":  ["react", "react-dom", "react-router-dom"],
-          "ui-vendor":     ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu", "@radix-ui/react-select"],
-          "chart-vendor":  ["recharts"],
-          "redux-vendor":  ["@reduxjs/toolkit", "react-redux"],
-          "query-vendor":  ["@tanstack/react-query"],
+        manualChunks: (id) => {
+          if (id.includes("node_modules/react") || id.includes("node_modules/react-dom") || id.includes("node_modules/react-router-dom")) return "react-vendor";
+          if (id.includes("node_modules/@radix-ui")) return "ui-vendor";
+          if (id.includes("node_modules/recharts")) return "chart-vendor";
+          if (id.includes("node_modules/@reduxjs") || id.includes("node_modules/react-redux")) return "redux-vendor";
+          if (id.includes("node_modules/@tanstack")) return "query-vendor";
         },
       },
     },

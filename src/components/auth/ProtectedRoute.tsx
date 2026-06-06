@@ -5,10 +5,12 @@ import { markReady, setUser } from "@/store/authSlice";
 import { loadPreferences } from "@/store/preferencesSlice";
 import { tokenStore, api } from "@/lib/api";
 import { authApi } from "@/features/auth/api";
+import { useTheme } from "@/components/theme/ThemeProvider";
 
 export default function ProtectedRoute() {
   const dispatch = useAppDispatch();
   const { user, ready } = useAppSelector((s) => s.auth);
+  const { loadTheme } = useTheme();
 
   useEffect(() => {
     if (ready) return;
@@ -19,8 +21,6 @@ export default function ProtectedRoute() {
 
     async function bootstrap() {
       try {
-        // 1. Load user from /api/auth/me
-        // authApi.me() returns data?.data ?? data — which is the user object
         const payload = await authApi.me();
         const u = payload ?? null;
         dispatch(
@@ -37,12 +37,18 @@ export default function ProtectedRoute() {
           ),
         );
 
-        // 2. Load user preferences from backend (non-blocking)
+        // Load preferences + theme from backend
         try {
           const { data } = await api.get("/api/preferences/me");
           const prefs = data?.data ?? data;
           if (prefs?.settings && typeof prefs.settings === "object") {
-            dispatch(loadPreferences(prefs.settings));
+            const { theme, ...restPrefs } = prefs.settings as any;
+            // Hydrate Redux preferences (layout, display, regional, etc.)
+            dispatch(loadPreferences(restPrefs));
+            // Hydrate theme (mode, preset, custom colors)
+            if (theme && typeof theme === "object") {
+              loadTheme(theme);
+            }
           }
         } catch {
           // Preferences load failure is non-fatal — localStorage fallback is used
@@ -54,7 +60,7 @@ export default function ProtectedRoute() {
     }
 
     bootstrap();
-  }, [dispatch, ready]);
+  }, [dispatch, ready, loadTheme]);
 
   if (!ready) {
     return (
