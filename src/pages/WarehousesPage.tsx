@@ -1,10 +1,12 @@
 import { GenericPage } from "@/components/data/GenericPage";
 
+// Backend: createWarehouse({ tenantId, code, name, address? })
+// code+name are required
 export default function WarehousesPage() {
   return (
     <GenericPage
       title="Warehouses"
-      description="Warehouse locations and status"
+      description="Warehouse locations"
       path="/api/warehouses"
       columns={[
         { key: "code",      label: "Code",    editable: true },
@@ -17,9 +19,9 @@ export default function WarehousesPage() {
         title: "Warehouse",
         postUrl: "/api/warehouses",
         fields: [
-          { key: "code",    label: "Code",    required: true, placeholder: "e.g. WH-01" },
-          { key: "name",    label: "Name",    required: true },
-          { key: "address", label: "Address", type: "textarea" },
+          { key: "code",    label: "Code",    required: true, placeholder: "e.g. WH-MAIN" },
+          { key: "name",    label: "Name",    required: true, placeholder: "e.g. Main Warehouse" },
+          { key: "address", label: "Address", type: "textarea", placeholder: "Full address (optional)" },
         ],
       }}
     />

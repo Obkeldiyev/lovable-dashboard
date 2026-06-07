@@ -1,5 +1,6 @@
 import { GenericPage } from "@/components/data/GenericPage";
 
+// Backend: createCategory({ tenantId, name, parentId?, path? })
 export default function CategoriesPage() {
   return (
     <GenericPage
@@ -16,8 +17,8 @@ export default function CategoriesPage() {
         title: "Category",
         postUrl: "/api/categories",
         fields: [
-          { key: "name", label: "Name", required: true },
-          { key: "path", label: "Path", placeholder: "e.g. Electronics / Phones" },
+          { key: "name", label: "Name", required: true, placeholder: "e.g. Electronics" },
+          { key: "path", label: "Path", placeholder: "e.g. Electronics / Phones (optional)" },
         ],
       }}
     />

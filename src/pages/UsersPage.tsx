@@ -134,6 +134,7 @@ export default function UsersPage() {
   async function handleCreate() {
     try {
       await api.post("/api/users", {
+        tenantId: currentUser?.tenantId,
         fullName: form.fullName,
         email: form.email || undefined,
         phone: form.phone || undefined,

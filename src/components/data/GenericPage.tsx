@@ -27,7 +27,8 @@ export function makeListLoader(path: string): Loader {
 
 export function makePatcher(path: string) {
   return async (id: string | number, patch: Record<string, unknown>) => {
-    await api.patch(`${path}/${id}`, patch);
+    // All VMS backend routes use PUT /:id for updates (not PATCH)
+    await api.put(`${path}/${id}`, patch);
   };
 }
 

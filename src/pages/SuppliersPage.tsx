@@ -1,5 +1,6 @@
 import { GenericPage } from "@/components/data/GenericPage";
 
+// Backend: createSupplier({ tenantId, name, phone?, email?, address?, notes? })
 export default function SuppliersPage() {
   return (
     <GenericPage
@@ -17,11 +18,11 @@ export default function SuppliersPage() {
         title: "Supplier",
         postUrl: "/api/suppliers",
         fields: [
-          { key: "name",    label: "Name",    required: true },
-          { key: "email",   label: "Email",   type: "email" },
-          { key: "phone",   label: "Phone",   type: "tel" },
-          { key: "address", label: "Address", type: "textarea" },
-          { key: "notes",   label: "Notes",   type: "textarea" },
+          { key: "name",    label: "Name",    required: true, placeholder: "Company name" },
+          { key: "email",   label: "Email",   type: "email",  placeholder: "orders@supplier.com" },
+          { key: "phone",   label: "Phone",   type: "tel",    placeholder: "+1 234 567 8900" },
+          { key: "address", label: "Address", type: "textarea", placeholder: "Street, City, Country" },
+          { key: "notes",   label: "Notes",   type: "textarea", placeholder: "Any additional notes…" },
         ],
       }}
     />
