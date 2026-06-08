@@ -4,22 +4,29 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { setUser } from "@/store/authSlice";
 import { authApi } from "@/features/auth/api";
-import { Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, Globe } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { cn } from "@/lib/utils";
 
 export default function LoginPage() {
   const nav = useNavigate();
   const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user);
+  const { t, i18n } = useTranslation();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { document.title = "Sign in · VMS"; }, []);
+  useEffect(() => { document.title = `${t("login.signIn")} · VMS`; }, [t]);
   if (user) return <Navigate to="/dashboard" replace />;
 
   async function onSubmit(e: React.FormEvent) {
@@ -27,7 +34,6 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const res = await authApi.login({ email, password });
-      // Backend returns { token, refreshToken, user: { id, email, fullName, role, tenantId, ... } }
       const u = res.user;
       dispatch(
         setUser(
@@ -42,13 +48,13 @@ export default function LoginPage() {
             : { id: "self", email },
         ),
       );
-      toast.success("Welcome back");
+      toast.success(t("login.welcomeBack"));
       nav("/dashboard", { replace: true });
     } catch (err: any) {
       const msg =
         err?.response?.data?.error ??
         err?.response?.data?.message ??
-        "Invalid email or password";
+        t("login.invalidCredentials");
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -57,6 +63,29 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen grid place-items-center bg-background px-4">
+      {/* Language switcher top-right */}
+      <div className="fixed top-4 right-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <Globe className="h-4 w-4" />
+              {i18n.language === "ru" ? "RU" : i18n.language === "uz" ? "UZ" : "EN"}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {(["en", "ru", "uz"] as const).map((l) => (
+              <DropdownMenuItem
+                key={l}
+                onClick={() => i18n.changeLanguage(l)}
+                className={cn("gap-2", i18n.language === l && "font-semibold text-primary")}
+              >
+                {l === "en" ? "🇺🇸 English" : l === "ru" ? "🇷🇺 Русский" : "🇺🇿 O'zbek"}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
       <div className="w-full max-w-sm space-y-6 animate-scale-in">
         {/* Logo */}
         <div className="flex flex-col items-center gap-3">
@@ -65,19 +94,19 @@ export default function LoginPage() {
           </div>
           <div className="text-center">
             <h1 className="text-2xl font-bold tracking-tight">VMS</h1>
-            <p className="text-sm text-muted-foreground">Warehouse Management System</p>
+            <p className="text-sm text-muted-foreground">{t("app.subtitle")}</p>
           </div>
         </div>
 
         <Card className="shadow-md">
           <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Sign in to your account</CardTitle>
-            <CardDescription>Enter your credentials to continue</CardDescription>
+            <CardTitle className="text-lg">{t("login.signInTitle")}</CardTitle>
+            <CardDescription>{t("login.signInDesc")}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={onSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("login.email")}</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
                   <Input
@@ -93,7 +122,7 @@ export default function LoginPage() {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t("login.password")}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
                   <Input
@@ -117,7 +146,7 @@ export default function LoginPage() {
                 </div>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Signing in…" : "Sign in"}
+                {loading ? t("login.signingIn") : t("login.signIn")}
               </Button>
             </form>
           </CardContent>

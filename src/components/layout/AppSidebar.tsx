@@ -39,11 +39,11 @@ export const NAV = [
 ] as const;
 
 const GROUPS = [
-  { id: "main",      label: "Main" },
-  { id: "catalog",   label: "Catalog" },
-  { id: "ops",       label: "Operations" },
-  { id: "logistics", label: "Logistics" },
-  { id: "system",    label: "System" },
+  { id: "main" },
+  { id: "catalog" },
+  { id: "ops" },
+  { id: "logistics" },
+  { id: "system" },
 ] as const;
 
 export function AppSidebar() {

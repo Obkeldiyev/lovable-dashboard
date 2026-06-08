@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/store";
 import { CreateDialog, type CreateDialogConfig } from "@/components/data/CreateDialog";
+import { useTranslation } from "react-i18next";
 
 // ─── Column definition ────────────────────────────────────────────────────────
 
@@ -84,10 +85,12 @@ export function EditableTable<T extends { id: string | number }>({
   onSave,
   onDelete,
   onCreate,
-  empty = "No records found",
+  empty,
+  title,
   searchable = true,
 }: Props<T>) {
   const prefs = useAppSelector((s) => s.preferences);
+  const { t } = useTranslation();
   const [editing, setEditing] = useState<{ id: T["id"]; key: string } | null>(null);
   const [draft, setDraft] = useState<string>("");
   const [saving, setSaving] = useState(false);
@@ -127,9 +130,9 @@ export function EditableTable<T extends { id: string | number }>({
     setSaving(true);
     try {
       await onSave?.(row.id, { [col.key]: v } as Partial<T>);
-      toast.success("Saved");
+      toast.success(t("common.saved"));
     } catch {
-      toast.error("Failed to save");
+      toast.error(t("common.failedSave"));
     } finally {
       setSaving(false);
       setEditing(null);
@@ -140,9 +143,9 @@ export function EditableTable<T extends { id: string | number }>({
     if (deleteId == null) return;
     try {
       await onDelete?.(deleteId);
-      toast.success("Deleted");
+      toast.success(t("common.deleted"));
     } catch {
-      toast.error("Failed to delete");
+      toast.error(t("common.failedDelete"));
     } finally {
       setDeleteId(null);
     }
@@ -153,10 +156,10 @@ export function EditableTable<T extends { id: string | number }>({
   if (rows.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-border bg-card p-12 text-center">
-        <p className="text-sm text-muted-foreground">{empty}</p>
+        <p className="text-sm text-muted-foreground">{empty ?? t("common.empty")}</p>
         {onCreate && (
           <Button size="sm" variant="outline" className="mt-3 gap-1.5" onClick={onCreate}>
-            <Plus className="h-4 w-4" /> Add first record
+            <Plus className="h-4 w-4" /> {t("common.addFirst")}
           </Button>
         )}
       </div>
@@ -173,7 +176,7 @@ export function EditableTable<T extends { id: string | number }>({
           <div className="relative flex-1 max-w-xs">
             <Search className="absolute left-2.5 top-2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
-              placeholder="Search…"
+              placeholder={t("common.search")}
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               className="h-8 pl-8 bg-muted/40 text-sm"
@@ -189,7 +192,7 @@ export function EditableTable<T extends { id: string | number }>({
           </div>
           {search && (
             <span className="text-xs text-muted-foreground">
-              {filtered.length} result{filtered.length !== 1 ? "s" : ""}
+              {filtered.length} {filtered.length !== 1 ? t("table.results_plural") : t("table.results")}
             </span>
           )}
         </div>
