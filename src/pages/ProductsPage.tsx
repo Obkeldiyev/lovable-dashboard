@@ -114,8 +114,8 @@ function CreateProductDialog({
       type:         form.type || undefined,
       unit:         form.unit.trim()         || undefined,
       description:  form.description.trim()  || undefined,
-      brandId:      form.brandId             || undefined,
-      categoryId:   form.categoryId          || undefined,
+      brandId:      form.brandId === "__none__" ? undefined : form.brandId || undefined,
+      categoryId:   form.categoryId === "__none__" ? undefined : form.categoryId || undefined,
       defaultCost:  num(form.defaultCost),
       defaultPrice: num(form.defaultPrice),
       taxRate:      num(form.taxRate),
@@ -190,12 +190,12 @@ function CreateProductDialog({
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Brand</Label>
-                <Select value={form.brandId} onValueChange={(v) => set("brandId", v)}>
+                <Select value={form.brandId || "__none__"} onValueChange={(v) => set("brandId", v === "__none__" ? "" : v)}>
                   <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select brand…" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">— None —</SelectItem>
+                    <SelectItem value="__none__">— {t ? t("common.none") : "None"} —</SelectItem>
                     {brands.map((b) => (
                       <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                     ))}
@@ -209,12 +209,12 @@ function CreateProductDialog({
               </div>
               <div className="space-y-1.5">
                 <Label>Category</Label>
-                <Select value={form.categoryId} onValueChange={(v) => set("categoryId", v)}>
+                <Select value={form.categoryId || "__none__"} onValueChange={(v) => set("categoryId", v === "__none__" ? "" : v)}>
                   <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select category…" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">— None —</SelectItem>
+                    <SelectItem value="__none__">— None —</SelectItem>
                     {categories.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
                         {c.path ? `${c.path}` : c.name}

@@ -66,7 +66,7 @@ function CreateCategoryDialog({
     const body: Record<string, unknown> = {
       tenantId,
       name:     form.name.trim(),
-      parentId: form.parentId || undefined,
+      parentId: (form.parentId === "__none__" || !form.parentId) ? undefined : form.parentId,
       path:     form.path.trim() || undefined,
     };
 
@@ -113,12 +113,12 @@ function CreateCategoryDialog({
           {/* Parent category — dropdown of existing ones */}
           <div className="space-y-1.5">
             <Label>Parent Category</Label>
-            <Select value={form.parentId} onValueChange={(v) => set("parentId", v)}>
+            <Select value={form.parentId || "__none__"} onValueChange={(v) => set("parentId", v === "__none__" ? "" : v)}>
               <SelectTrigger className="h-9">
                 <SelectValue placeholder="No parent (top-level)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">— No parent (top-level) —</SelectItem>
+                <SelectItem value="__none__">— No parent (top-level) —</SelectItem>
                 {existing.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {catLabel(c)}

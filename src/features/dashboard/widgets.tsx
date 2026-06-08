@@ -7,6 +7,7 @@ import {
 import { dashboardApi, type LowStockItem, type Alert, type RecentActivity, type DashboardStats } from "@/features/dashboard/api";
 import type { WidgetId } from "@/store/dashboardSlice";
 import { Boxes, Warehouse, Truck, AlertTriangle, ShoppingCart, Send } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 function Kpi({ label, value, icon: Icon }: { label: string; value: number | string; icon: React.ElementType }) {
   return (
@@ -32,38 +33,45 @@ const toList = <T,>(value: T[] | unknown): T[] => (Array.isArray(value) ? value 
 
 export function KpiProducts() {
   const s = useStats();
-  return <Kpi label="Products" value={s?.totalProducts ?? "—"} icon={Boxes} />;
+  const { t } = useTranslation();
+  return <Kpi label={t("dashboard.products")} value={s?.totalProducts ?? "—"} icon={Boxes} />;
 }
 export function KpiWarehouses() {
   const s = useStats();
-  return <Kpi label="Warehouses" value={s?.totalWarehouses ?? "—"} icon={Warehouse} />;
+  const { t } = useTranslation();
+  return <Kpi label={t("dashboard.warehouses")} value={s?.totalWarehouses ?? "—"} icon={Warehouse} />;
 }
 export function KpiSuppliers() {
   const s = useStats();
-  return <Kpi label="Suppliers" value={s?.totalSuppliers ?? "—"} icon={Truck} />;
+  const { t } = useTranslation();
+  return <Kpi label={t("dashboard.suppliers")} value={s?.totalSuppliers ?? "—"} icon={Truck} />;
 }
 export function KpiLowStock() {
   const s = useStats();
-  return <Kpi label="Low stock" value={s?.lowStockCount ?? "—"} icon={AlertTriangle} />;
+  const { t } = useTranslation();
+  return <Kpi label={t("dashboard.lowStock")} value={s?.lowStockCount ?? "—"} icon={AlertTriangle} />;
 }
 export function KpiPendingPo() {
   const s = useStats();
-  return <Kpi label="Pending POs" value={s?.pendingPOCount ?? "—"} icon={ShoppingCart} />;
+  const { t } = useTranslation();
+  return <Kpi label={t("dashboard.pendingPOs")} value={s?.pendingPOCount ?? "—"} icon={ShoppingCart} />;
 }
 export function KpiShipments() {
   const s = useStats();
-  return <Kpi label="Shipments" value={s?.pendingShipments ?? "—"} icon={Send} />;
+  const { t } = useTranslation();
+  return <Kpi label={t("dashboard.shipments")} value={s?.pendingShipments ?? "—"} icon={Send} />;
 }
 
 export function ChartFulfillment() {
   const [data, setData] = useState<{ date: string; orders: number; shipped: number }[]>([]);
+  const { t } = useTranslation();
   useEffect(() => { dashboardApi.getFulfillmentSeries().then(setData); }, []);
   const fallback = data.length ? data : Array.from({ length: 7 }, (_, i) => ({
     date: `D${i + 1}`, orders: 0, shipped: 0,
   }));
   return (
     <Card className="h-full">
-      <CardHeader><CardTitle className="text-sm">Fulfillment</CardTitle></CardHeader>
+      <CardHeader><CardTitle className="text-sm">{t("dashboard.fulfillment")}</CardTitle></CardHeader>
       <CardContent className="h-[calc(100%-3.5rem)]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={fallback}>
@@ -88,12 +96,13 @@ export function ChartFulfillment() {
 
 export function ChartPoStatus() {
   const [data, setData] = useState<{ status: string; count: number }[]>([]);
+  const { t } = useTranslation();
   useEffect(() => { dashboardApi.getPoStatus().then(setData); }, []);
   const fallback = data.length ? data : [{ status: "—", count: 0 }];
   const COLORS = ["hsl(var(--primary))", "hsl(var(--accent-foreground))", "hsl(var(--muted-foreground))", "hsl(var(--border))"];
   return (
     <Card className="h-full">
-      <CardHeader><CardTitle className="text-sm">PO Status</CardTitle></CardHeader>
+      <CardHeader><CardTitle className="text-sm">{t("dashboard.poStatus")}</CardTitle></CardHeader>
       <CardContent className="h-[calc(100%-3.5rem)]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={fallback}>
@@ -113,12 +122,13 @@ export function ChartPoStatus() {
 
 export function ListRecentActivity() {
   const [items, setItems] = useState<RecentActivity[]>([]);
+  const { t } = useTranslation();
   useEffect(() => { dashboardApi.getRecentActivity().then((value) => setItems(toList<RecentActivity>(value))); }, []);
   return (
     <Card className="h-full overflow-hidden flex flex-col">
-      <CardHeader><CardTitle className="text-sm">Recent activity</CardTitle></CardHeader>
+      <CardHeader><CardTitle className="text-sm">{t("dashboard.recentActivity")}</CardTitle></CardHeader>
       <CardContent className="flex-1 overflow-auto space-y-2">
-        {items.length === 0 && <p className="text-xs text-muted-foreground">No recent activity</p>}
+        {items.length === 0 && <p className="text-xs text-muted-foreground">{t("dashboard.noRecentActivity")}</p>}
         {toList<RecentActivity>(items).map((a) => (
           <div key={a.id} className="rounded-md border border-border p-2 text-xs">
             <div className="font-medium">{a.description}</div>
@@ -132,12 +142,13 @@ export function ListRecentActivity() {
 
 export function ListLowStock() {
   const [items, setItems] = useState<LowStockItem[]>([]);
+  const { t } = useTranslation();
   useEffect(() => { dashboardApi.getLowStock().then((value) => setItems(toList<LowStockItem>(value))); }, []);
   return (
     <Card className="h-full overflow-hidden flex flex-col">
-      <CardHeader><CardTitle className="text-sm">Low stock</CardTitle></CardHeader>
+      <CardHeader><CardTitle className="text-sm">{t("dashboard.lowStock")}</CardTitle></CardHeader>
       <CardContent className="flex-1 overflow-auto">
-        {items.length === 0 && <p className="text-xs text-muted-foreground">All good</p>}
+        {items.length === 0 && <p className="text-xs text-muted-foreground">{t("dashboard.allGood")}</p>}
         <ul className="divide-y divide-border text-xs">
           {toList<LowStockItem>(items).map((i) => (
             <li key={i.id} className="flex items-center justify-between py-1.5">
@@ -153,12 +164,13 @@ export function ListLowStock() {
 
 export function ListAlerts() {
   const [items, setItems] = useState<Alert[]>([]);
+  const { t } = useTranslation();
   useEffect(() => { dashboardApi.getAlerts().then((value) => setItems(toList<Alert>(value))); }, []);
   return (
     <Card className="h-full overflow-hidden flex flex-col">
-      <CardHeader><CardTitle className="text-sm">Alerts</CardTitle></CardHeader>
+      <CardHeader><CardTitle className="text-sm">{t("dashboard.alerts")}</CardTitle></CardHeader>
       <CardContent className="flex-1 overflow-auto space-y-2">
-        {items.length === 0 && <p className="text-xs text-muted-foreground">No alerts</p>}
+        {items.length === 0 && <p className="text-xs text-muted-foreground">{t("dashboard.noAlerts")}</p>}
         {toList<Alert>(items).map((a) => (
           <div key={a.id} className="rounded-md border border-border p-2 text-xs">
             <div className="flex items-center justify-between">
@@ -177,19 +189,19 @@ export function ListAlerts() {
   );
 }
 
+// WIDGETS map — labels are translation keys resolved at render time via useTranslation inside each component
 export const WIDGETS: Record<WidgetId, { label: string; render: () => JSX.Element }> = {
-  "kpi-products": { label: "KPI: Products", render: () => <KpiProducts /> },
-  "kpi-warehouses": { label: "KPI: Warehouses", render: () => <KpiWarehouses /> },
-  "kpi-suppliers": { label: "KPI: Suppliers", render: () => <KpiSuppliers /> },
-  "kpi-low-stock": { label: "KPI: Low stock", render: () => <KpiLowStock /> },
-  "kpi-pending-po": { label: "KPI: Pending POs", render: () => <KpiPendingPo /> },
-  "kpi-shipments": { label: "KPI: Shipments", render: () => <KpiShipments /> },
-  "chart-fulfillment": { label: "Chart: Fulfillment", render: () => <ChartFulfillment /> },
-  "chart-po-status": { label: "Chart: PO status", render: () => <ChartPoStatus /> },
-  "list-recent-activity": { label: "List: Recent activity", render: () => <ListRecentActivity /> },
-  "list-low-stock": { label: "List: Low stock", render: () => <ListLowStock /> },
-  "list-alerts": { label: "List: Alerts", render: () => <ListAlerts /> },
+  "kpi-products":          { label: "KPI: Products",        render: () => <KpiProducts /> },
+  "kpi-warehouses":        { label: "KPI: Warehouses",       render: () => <KpiWarehouses /> },
+  "kpi-suppliers":         { label: "KPI: Suppliers",        render: () => <KpiSuppliers /> },
+  "kpi-low-stock":         { label: "KPI: Low stock",        render: () => <KpiLowStock /> },
+  "kpi-pending-po":        { label: "KPI: Pending POs",      render: () => <KpiPendingPo /> },
+  "kpi-shipments":         { label: "KPI: Shipments",        render: () => <KpiShipments /> },
+  "chart-fulfillment":     { label: "Chart: Fulfillment",    render: () => <ChartFulfillment /> },
+  "chart-po-status":       { label: "Chart: PO Status",      render: () => <ChartPoStatus /> },
+  "list-recent-activity":  { label: "List: Recent activity", render: () => <ListRecentActivity /> },
+  "list-low-stock":        { label: "List: Low stock",       render: () => <ListLowStock /> },
+  "list-alerts":           { label: "List: Alerts",          render: () => <ListAlerts /> },
 };
 
-// Suppress unused PieChart import warning by re-exporting.
 export const __keep = PieChart;

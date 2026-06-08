@@ -11,6 +11,7 @@ import {
   ALL_WIDGETS, addWidget, removeWidget, resetLayout, setEditMode, setLayout,
 } from "@/store/dashboardSlice";
 import { WIDGETS } from "@/features/dashboard/widgets";
+import { useTranslation } from "react-i18next";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
@@ -18,9 +19,10 @@ const Grid = WidthProvider(ReactGridLayout);
 
 export default function DashboardPage() {
   const dispatch = useAppDispatch();
+  const { t } = useTranslation();
   const { editMode, layout, widgets } = useAppSelector((s) => s.dashboard);
 
-  useEffect(() => { document.title = "Dashboard · VMS"; }, []);
+  useEffect(() => { document.title = `${t("dashboard.title")} · VMS`; }, [t]);
 
   const available = ALL_WIDGETS.filter((w) => !widgets.includes(w));
   const visibleLayout = layout.filter((l) => widgets.includes(l.i as never));
@@ -29,9 +31,9 @@ export default function DashboardPage() {
     <div>
       <div className="mb-4 flex items-center justify-between gap-2 flex-wrap">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">Dashboard</h2>
+          <h2 className="text-xl font-semibold tracking-tight">{t("dashboard.title")}</h2>
           <p className="text-sm text-muted-foreground">
-            {editMode ? "Drag, resize, add or remove widgets." : "Live overview of your warehouse."}
+            {editMode ? t("dashboard.editMode") : t("dashboard.liveOverview")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -40,14 +42,14 @@ export default function DashboardPage() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button size="sm" variant="outline" disabled={available.length === 0}>
-                    <Plus className="h-4 w-4 mr-1" /> Add widget
+                    <Plus className="h-4 w-4 mr-1" /> {t("dashboard.addWidget")}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-60">
-                  <DropdownMenuLabel>Available</DropdownMenuLabel>
+                  <DropdownMenuLabel>{t("dashboard.available")}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {available.length === 0 && (
-                    <DropdownMenuItem disabled>All widgets in use</DropdownMenuItem>
+                    <DropdownMenuItem disabled>{t("dashboard.allWidgetsInUse")}</DropdownMenuItem>
                   )}
                   {available.map((w) => (
                     <DropdownMenuItem key={w} onClick={() => dispatch(addWidget(w))}>
@@ -57,7 +59,7 @@ export default function DashboardPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
               <Button size="sm" variant="ghost" onClick={() => dispatch(resetLayout())}>
-                <RotateCcw className="h-4 w-4 mr-1" /> Reset
+                <RotateCcw className="h-4 w-4 mr-1" /> {t("dashboard.reset")}
               </Button>
             </>
           )}
@@ -66,7 +68,10 @@ export default function DashboardPage() {
             variant={editMode ? "default" : "outline"}
             onClick={() => dispatch(setEditMode(!editMode))}
           >
-            {editMode ? <><Check className="h-4 w-4 mr-1" /> Done</> : <><Pencil className="h-4 w-4 mr-1" /> Edit</>}
+            {editMode
+              ? <><Check className="h-4 w-4 mr-1" /> {t("dashboard.done")}</>
+              : <><Pencil className="h-4 w-4 mr-1" /> {t("dashboard.edit")}</>
+            }
           </Button>
         </div>
       </div>
