@@ -195,7 +195,7 @@ function CreateProductDialog({
                     <SelectValue placeholder="Select brand…" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__none__">— {t ? t("common.none") : "None"} —</SelectItem>
+                    <SelectItem value="__none__">— None —</SelectItem>
                     {brands.map((b) => (
                       <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                     ))}
