@@ -14,7 +14,8 @@ const resources = {
         receivings: "Receivings", shipments: "Shipments", cycleCounts: "Cycle Counts",
         ops: "Operations", logistics: "Logistics", fleet: "Fleet", shops: "Shops",
         driver: "Driver", notifications: "Notifications", settings: "Settings",
-        users: "Users", permissions: "Permissions",
+        users: "Users", permissions: "Permissions", agentVisits: "My Visits",
+        agentPricing: "Shop Prices", reports: "Reports",
       },
       navGroups: { main: "Main", catalog: "Catalog", ops: "Operations", logistics: "Logistics", system: "System" },
       navDescriptions: {
@@ -108,7 +109,8 @@ const resources = {
         receivings: "Приёмки", shipments: "Отгрузки", cycleCounts: "Инвентаризация",
         ops: "Операции", logistics: "Логистика", fleet: "Автопарк", shops: "Магазины",
         driver: "Водитель", notifications: "Уведомления", settings: "Настройки",
-        users: "Пользователи", permissions: "Права доступа",
+        users: "Пользователи", permissions: "Права доступа", agentVisits: "Мои визиты",
+        agentPricing: "Цены магазинов", reports: "Отчёты",
       },
       navGroups: { main: "Главное", catalog: "Каталог", ops: "Операции", logistics: "Логистика", system: "Система" },
       navDescriptions: {
@@ -202,7 +204,8 @@ const resources = {
         receivings: "Qabul", shipments: "Jo'natma", cycleCounts: "Hisob-kitob",
         ops: "Operatsiyalar", logistics: "Logistika", fleet: "Avtopark", shops: "Do'konlar",
         driver: "Haydovchi", notifications: "Bildirishnomalar", settings: "Sozlamalar",
-        users: "Foydalanuvchilar", permissions: "Ruxsatlar",
+        users: "Foydalanuvchilar", permissions: "Ruxsatlar", agentVisits: "Mening tashriflarim",
+        agentPricing: "Do'kon narxlari", reports: "Hisobotlar",
       },
       navGroups: { main: "Asosiy", catalog: "Katalog", ops: "Operatsiyalar", logistics: "Logistika", system: "Tizim" },
       navDescriptions: {

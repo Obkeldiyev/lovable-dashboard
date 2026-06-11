@@ -29,6 +29,9 @@ const ShopsPage = lazy(() => import("@/pages/ShopsPage"));
 const FleetPage = lazy(() => import("@/pages/FleetPage"));
 const DriverPage = lazy(() => import("@/pages/DriverPage"));
 const DriverNavigatePage = lazy(() => import("@/pages/DriverNavigatePage"));
+const AgentPage = lazy(() => import("@/pages/AgentPage"));
+const ReportsPage = lazy(() => import("@/pages/ReportsPage"));
+const ShopPricingPage = lazy(() => import("@/pages/ShopPricingPage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 export function AppRouter() {
@@ -66,6 +69,9 @@ export function AppRouter() {
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/users" element={<UsersPage />} />
               <Route path="/permissions" element={<PermissionsPage />} />
+              <Route path="/agent" element={<AgentPage />} />
+              <Route path="/agent/pricing" element={<ShopPricingPage />} />
+              <Route path="/reports" element={<ReportsPage />} />
             </Route>
           </Route>
           <Route path="*" element={<NotFound />} />

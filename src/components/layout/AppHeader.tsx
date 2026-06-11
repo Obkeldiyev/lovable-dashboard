@@ -122,7 +122,7 @@ export function AppHeader() {
             <DropdownMenuItem asChild>
               <NavLink to="/settings" className="cursor-pointer gap-2">
                 <Settings className="h-4 w-4" />
-                Settings
+                {t("common.settings")}
               </NavLink>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -131,7 +131,7 @@ export function AppHeader() {
               className="text-destructive focus:text-destructive cursor-pointer gap-2"
             >
               <LogOut className="h-4 w-4" />
-              Sign out
+              {t("common.signOut")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

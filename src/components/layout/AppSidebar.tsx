@@ -2,7 +2,7 @@ import {
   LayoutDashboard, Boxes, Package, Tags, FolderTree, Truck,
   Warehouse, ShoppingCart, ClipboardList, PackageCheck, Send,
   ScanBarcode, Workflow, Bell, Settings, MapPinned, Navigation, Store,
-  Users, UserCog, ShieldCheck,
+  Users, UserCog, ShieldCheck, Route, Camera, BarChart3, DollarSign,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/sidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useAppSelector } from "@/store";
+import { canSeeNav } from "@/lib/navPermissions";
 
 export const NAV = [
   { key: "dashboard",     url: "/dashboard",       icon: LayoutDashboard, group: "main" },
@@ -31,10 +33,13 @@ export const NAV = [
   { key: "logistics",     url: "/logistics",        icon: MapPinned,       group: "logistics" },
   { key: "fleet",         url: "/fleet",            icon: Users,           group: "logistics" },
   { key: "shops",         url: "/shops",            icon: Store,           group: "logistics" },
+  { key: "agentVisits",   url: "/agent",            icon: Route,           group: "logistics" },
+  { key: "agentPricing",  url: "/agent/pricing",    icon: DollarSign,      group: "logistics" },
   { key: "driver",        url: "/driver",           icon: Navigation,      group: "logistics" },
   { key: "notifications", url: "/notifications",    icon: Bell,            group: "system" },
   { key: "users",         url: "/users",            icon: UserCog,         group: "system" },
   { key: "permissions",   url: "/permissions",      icon: ShieldCheck,     group: "system" },
+  { key: "reports",       url: "/reports",          icon: BarChart3,       group: "system" },
   { key: "settings",      url: "/settings",         icon: Settings,        group: "system" },
 ] as const;
 
@@ -51,6 +56,7 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
   const { t } = useTranslation();
+  const role = useAppSelector((s) => s.auth.user?.role);
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
@@ -68,18 +74,20 @@ export function AppSidebar() {
           {!collapsed && (
             <div className="flex flex-col leading-none">
               <span className="font-bold tracking-tight text-sidebar-foreground text-sm">VMS</span>
-              <span className="text-[10px] text-sidebar-foreground/50 tracking-wide">Warehouse System</span>
+              <span className="text-[10px] text-sidebar-foreground/50 tracking-wide">{t("app.subtitle")}</span>
             </div>
           )}
         </div>
 
         {GROUPS.map((g) => {
-          const items = NAV.filter((n) => n.group === g.id);
+          const items = NAV.filter((n) => n.group === g.id && canSeeNav(n.key, role));
+          if (items.length === 0) return null;
+
           return (
             <SidebarGroup key={g.id} className="py-1">
               {!collapsed && (
                 <SidebarGroupLabel className="text-sidebar-foreground/40 uppercase text-[10px] tracking-widest px-3 py-1.5">
-                  {g.label}
+                  {t(`navGroups.${g.id}`, g.id)}
                 </SidebarGroupLabel>
               )}
               <SidebarGroupContent>
@@ -108,7 +116,7 @@ export function AppSidebar() {
                             )}
                           />
                           {!collapsed && (
-                            <span className="truncate text-sm">{t(`nav.${item.key}`)}</span>
+                            <span className="truncate text-sm">{t(`nav.${item.key}`, item.key)}</span>
                           )}
                           {!collapsed && active && (
                             <span className="ml-auto h-1.5 w-1.5 rounded-full bg-sidebar-primary shrink-0" />
@@ -123,7 +131,7 @@ export function AppSidebar() {
                           <Tooltip>
                             <TooltipTrigger asChild>{btn}</TooltipTrigger>
                             <TooltipContent side="right" className="text-xs">
-                              {t(`nav.${item.key}`)}
+                              {t(`nav.${item.key}`, item.key)}
                             </TooltipContent>
                           </Tooltip>
                         ) : (

@@ -27,11 +27,13 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { logout } from "@/store/authSlice";
 import { authApi } from "@/features/auth/api";
 import { cn } from "@/lib/utils";
+import { canSeeNav } from "@/lib/navPermissions";
 
 type NavItem = {
   key: string;
   path?: string;
   children?: NavItem[];
+  roles?: string[]; // optional explicit override
 };
 
 const navList: NavItem[] = [
@@ -39,51 +41,54 @@ const navList: NavItem[] = [
   {
     key: "inventory",
     children: [
-      { key: "warehouses", path: "/warehouses" },
-      { key: "inventory", path: "/inventory" },
+      { key: "warehouses",  path: "/warehouses" },
+      { key: "inventory",   path: "/inventory" },
       { key: "cycleCounts", path: "/cycle-counts" },
     ],
   },
   {
     key: "products",
     children: [
-      { key: "products", path: "/products" },
+      { key: "products",   path: "/products" },
       { key: "categories", path: "/categories" },
-      { key: "brands", path: "/brands" },
+      { key: "brands",     path: "/brands" },
     ],
   },
   {
     key: "procurement",
     children: [
-      { key: "suppliers", path: "/suppliers" },
+      { key: "suppliers",      path: "/suppliers" },
       { key: "purchaseOrders", path: "/purchase-orders" },
-      { key: "receivings", path: "/receivings" },
+      { key: "receivings",     path: "/receivings" },
     ],
   },
   {
     key: "fulfillment",
     children: [
-      { key: "orders", path: "/orders" },
+      { key: "orders",    path: "/orders" },
       { key: "shipments", path: "/shipments" },
-      { key: "driver", path: "/driver" },
+      { key: "driver",    path: "/driver" },
     ],
   },
   {
     key: "logistics",
     children: [
-      { key: "logistics", path: "/logistics" },
-      { key: "fleet", path: "/fleet" },
-      { key: "shops", path: "/shops" },
+      { key: "logistics",    path: "/logistics" },
+      { key: "fleet",        path: "/fleet" },
+      { key: "shops",        path: "/shops" },
+      { key: "agentVisits",  path: "/agent" },
+      { key: "agentPricing", path: "/agent/pricing" },
     ],
   },
   {
     key: "admin",
     children: [
-      { key: "users", path: "/users" },
-      { key: "permissions", path: "/permissions" },
+      { key: "users",         path: "/users" },
+      { key: "permissions",   path: "/permissions" },
+      { key: "reports",       path: "/reports" },
       { key: "notifications", path: "/notifications" },
-      { key: "ops", path: "/ops" },
-      { key: "settings", path: "/settings" },
+      { key: "ops",           path: "/ops" },
+      { key: "settings",      path: "/settings" },
     ],
   },
 ];
@@ -93,6 +98,7 @@ export function AppNavbar() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const user = useAppSelector((s) => s.auth.user);
+  const role = user?.role;
 
   const initials = user?.name
     ? user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
@@ -103,6 +109,18 @@ export function AppNavbar() {
     dispatch(logout());
     navigate("/login");
   }
+
+  // Filter nav items by role
+  const visibleNav = navList
+    .map((item) => {
+      if (item.children) {
+        const visibleChildren = item.children.filter((c) => canSeeNav(c.key, role));
+        if (visibleChildren.length === 0) return null;
+        return { ...item, children: visibleChildren };
+      }
+      return canSeeNav(item.key, role) ? item : null;
+    })
+    .filter(Boolean) as NavItem[];
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -118,7 +136,7 @@ export function AppNavbar() {
         {/* Desktop nav */}
         <NavigationMenu className="hidden lg:flex">
           <NavigationMenuList>
-            {navList.map((item) =>
+            {visibleNav.map((item) =>
               item.children ? (
                 <NavigationMenuItem key={item.key}>
                   <NavigationMenuTrigger className="h-9 text-sm">
@@ -248,7 +266,7 @@ export function AppNavbar() {
             <DropdownMenuItem asChild>
               <NavLink to="/settings" className="cursor-pointer">
                 <Settings className="mr-2 h-4 w-4" />
-                Settings
+                {t("common.settings")}
               </NavLink>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -257,7 +275,7 @@ export function AppNavbar() {
               className="text-destructive focus:text-destructive cursor-pointer"
             >
               <LogOut className="mr-2 h-4 w-4" />
-              Sign out
+              {t("common.signOut")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
