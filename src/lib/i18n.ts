@@ -49,6 +49,7 @@ const resources = {
         deleteTitle: "Delete this record?",
         deleteDesc: "This action cannot be undone. The record will be permanently removed.",
         results: "result", results_plural: "results",
+        filters: "Filters", clearAll: "Clear all", clearFilter: "Clear", filterAny: "Any",
       },
       theme: { light: "Light", dark: "Dark", system: "System" },
       login: {
@@ -144,6 +145,7 @@ const resources = {
         deleteTitle: "Удалить запись?",
         deleteDesc: "Это действие нельзя отменить. Запись будет удалена безвозвратно.",
         results: "результат", results_plural: "результатов",
+        filters: "Фильтры", clearAll: "Очистить все", clearFilter: "Очистить", filterAny: "Любое",
       },
       theme: { light: "Светлая", dark: "Тёмная", system: "Системная" },
       login: {
@@ -239,6 +241,7 @@ const resources = {
         deleteTitle: "Yozuvni o'chirish?",
         deleteDesc: "Bu amalni bekor qilib bo'lmaydi. Yozuv butunlay o'chiriladi.",
         results: "natija", results_plural: "natijalar",
+        filters: "Filtrlar", clearAll: "Tozalash", clearFilter: "Tozalash", filterAny: "Ixtiyoriy",
       },
       theme: { light: "Yorug'", dark: "Qorong'i", system: "Tizim" },
       login: {
