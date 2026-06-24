@@ -70,7 +70,7 @@ const STATUS_VARIANTS: Record<
 };
 
 export default function OrdersPage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
@@ -86,11 +86,11 @@ export default function OrdersPage() {
       const params = new URLSearchParams();
       if (priceFilter.min) params.set("minPrice", priceFilter.min);
       if (priceFilter.max) params.set("maxPrice", priceFilter.max);
-      
+
       const { data } = await api.get(`/api/orders?${params.toString()}`);
-  
-  // For export - preserve the filter params
-  setPriceFilter({ min: params.get("minPrice") || "", max: params.get("maxPrice") || "" });
+
+      // For export - preserve the filter params
+      setSearchParams(params, { replace: true });
       let arr: unknown[] = [];
       if (Array.isArray(data)) {
         arr = data;
@@ -111,7 +111,7 @@ export default function OrdersPage() {
   useEffect(() => {
     loadOrders();
     document.title = "Orders · VMS";
-  }, []);
+  }, [priceFilter.min, priceFilter.max]);
 
   async function handleStatusChange(orderId: string, newStatus: OrderStatus) {
     try {
@@ -132,19 +132,25 @@ export default function OrdersPage() {
       const params = new URLSearchParams();
       if (priceFilter.min) params.set("minPrice", priceFilter.min);
       if (priceFilter.max) params.set("maxPrice", priceFilter.max);
-      
-      const { data } = await api.get(`/api/orders/export?${params.toString()}`, {
-        responseType: "blob"
-      });
-      
+
+      const { data } = await api.get(
+        `/api/orders/export?${params.toString()}`,
+        {
+          responseType: "blob",
+        },
+      );
+
       const url = window.URL.createObjectURL(new Blob([data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `orders_${new Date().toISOString().split("T")[0]}.xlsx`);
+      link.setAttribute(
+        "download",
+        `orders_${new Date().toISOString().split("T")[0]}.xlsx`,
+      );
       document.body.appendChild(link);
       link.click();
       link.remove();
-      
+
       toast.success("Export started");
     } catch (error) {
       toast.error("Failed to export orders");
@@ -286,9 +292,9 @@ export default function OrdersPage() {
         description="Order reservations"
         action={
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               className="gap-1.5"
               onClick={handleExport}
             >

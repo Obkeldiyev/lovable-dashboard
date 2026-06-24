@@ -5,15 +5,34 @@
  */
 
 export type AppRole =
-  | "SUPER_ADMIN" | "DIRECTOR" | "MANAGER"
-  | "WAREHOUSE_STAFF" | "AGENT" | "ACCOUNTANT" | "SUPPORT";
+  | "SUPER_ADMIN"
+  | "DIRECTOR"
+  | "MANAGER"
+  | "WAREHOUSE_STAFF"
+  | "AGENT"
+  | "ACCOUNTANT"
+  | "SUPPORT";
 
 // Director-level roles (management)
 const DIRECTOR = ["SUPER_ADMIN", "DIRECTOR", "MANAGER"] as AppRole[];
 // All internal roles
-const ALL = ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "WAREHOUSE_STAFF", "AGENT", "ACCOUNTANT", "SUPPORT"] as AppRole[];
+const ALL = [
+  "SUPER_ADMIN",
+  "DIRECTOR",
+  "MANAGER",
+  "WAREHOUSE_STAFF",
+  "AGENT",
+  "ACCOUNTANT",
+  "SUPPORT",
+] as AppRole[];
 // Commercial roles
-const COMMERCIAL = ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "AGENT", "ACCOUNTANT"] as AppRole[];
+const COMMERCIAL = [
+  "SUPER_ADMIN",
+  "DIRECTOR",
+  "MANAGER",
+  "AGENT",
+  "ACCOUNTANT",
+] as AppRole[];
 // Admin only
 const ADMIN = ["SUPER_ADMIN", "DIRECTOR"] as AppRole[];
 
@@ -27,37 +46,38 @@ export const NAV_PERMISSIONS: Record<string, AppRole[]> = {
   dashboard: ALL,
 
   // Inventory — warehouse & management
-  inventory:     ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "WAREHOUSE_STAFF"],
-  products:      ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "WAREHOUSE_STAFF", "AGENT"],
-  brands:        DIRECTOR,
-  categories:    DIRECTOR,
-  suppliers:     ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "ACCOUNTANT"],
+  inventory: ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "WAREHOUSE_STAFF"],
+  products: ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "WAREHOUSE_STAFF", "AGENT"],
+  brands: DIRECTOR,
+  categories: DIRECTOR,
+  suppliers: ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "ACCOUNTANT"],
 
   // Operations — warehouse & management
-  warehouses:    DIRECTOR,
-  purchaseOrders:["SUPER_ADMIN", "DIRECTOR", "MANAGER", "ACCOUNTANT"],
-  orders:        ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "WAREHOUSE_STAFF"],
-  receivings:    ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "WAREHOUSE_STAFF"],
-  shipments:     ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "WAREHOUSE_STAFF"],
-  cycleCounts:   ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "WAREHOUSE_STAFF"],
-  ops:           DIRECTOR,
+  warehouses: DIRECTOR,
+  purchaseOrders: ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "ACCOUNTANT"],
+  orders: ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "WAREHOUSE_STAFF"],
+  receivings: ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "WAREHOUSE_STAFF"],
+  shipments: ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "WAREHOUSE_STAFF"],
+  cycleCounts: ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "WAREHOUSE_STAFF"],
+  ops: DIRECTOR,
 
   // Logistics
-  logistics:     ["SUPER_ADMIN", "DIRECTOR", "MANAGER"],
-  fleet:         ["SUPER_ADMIN", "DIRECTOR", "MANAGER"],
-  shops:         COMMERCIAL,
-  driver:        ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "WAREHOUSE_STAFF", "AGENT"],
+  logistics: ["SUPER_ADMIN", "DIRECTOR", "MANAGER"],
+  fleet: ["SUPER_ADMIN", "DIRECTOR", "MANAGER"],
+  shops: COMMERCIAL,
+  driver: ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "WAREHOUSE_STAFF", "AGENT"],
 
   // Agent-specific
-  agentVisits:   ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "AGENT"],
-  agentPricing:  ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "AGENT"],
+  agentVisits: ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "AGENT"],
+  agentPlans: ["SUPER_ADMIN", "DIRECTOR", "MANAGER"],
+  agentPricing: ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "AGENT"],
 
   // System
   notifications: ALL,
-  users:         DIRECTOR,
-  permissions:   ADMIN,
-  reports:       ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "ACCOUNTANT"],
-  settings:      ALL,
+  users: DIRECTOR,
+  permissions: ADMIN,
+  reports: ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "ACCOUNTANT"],
+  settings: ALL,
 };
 
 /** Returns true if the given role can see this nav item */

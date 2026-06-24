@@ -3,6 +3,7 @@ import { lazy, Suspense } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import RoleRoute from "@/components/auth/RoleRoute";
+import PlanManagementPage from "./pages/PlanManagementPage";
 
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
 const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
@@ -24,7 +25,9 @@ const CycleCountsPage = lazy(() => import("@/pages/CycleCountsPage"));
 const OpsPage = lazy(() => import("@/pages/OpsPage"));
 const NotificationsPage = lazy(() => import("@/pages/NotificationsPage"));
 const LogisticsPage = lazy(() => import("@/pages/LogisticsPage"));
-const LogisticsSettingsPage = lazy(() => import("@/pages/LogisticsSettingsPage"));
+const LogisticsSettingsPage = lazy(
+  () => import("@/pages/LogisticsSettingsPage"),
+);
 const ShopsPage = lazy(() => import("@/pages/ShopsPage"));
 const FleetPage = lazy(() => import("@/pages/FleetPage"));
 const DriverPage = lazy(() => import("@/pages/DriverPage"));
@@ -37,7 +40,13 @@ const NotFound = lazy(() => import("@/pages/NotFound"));
 export function AppRouter() {
   return (
     <BrowserRouter>
-      <Suspense fallback={<div className="min-h-screen grid place-items-center text-muted-foreground">Loading…</div>}>
+      <Suspense
+        fallback={
+          <div className="min-h-screen grid place-items-center text-muted-foreground">
+            Loading…
+          </div>
+        }
+      >
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route element={<ProtectedRoute />}>
@@ -61,15 +70,28 @@ export function AppRouter() {
               <Route path="/shops" element={<ShopsPage />} />
               <Route element={<RoleRoute allow={["driver", "admin"]} />}>
                 <Route path="/driver" element={<DriverPage />} />
-                <Route path="/driver/navigate/:id" element={<DriverNavigatePage />} />
+                <Route
+                  path="/driver/navigate/:id"
+                  element={<DriverNavigatePage />}
+                />
               </Route>
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/settings/appearance" element={<AppearancePage />} />
-              <Route path="/settings/logistics" element={<LogisticsSettingsPage />} />
+              <Route
+                path="/settings/logistics"
+                element={<LogisticsSettingsPage />}
+              />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/users" element={<UsersPage />} />
               <Route path="/permissions" element={<PermissionsPage />} />
               <Route path="/agent" element={<AgentPage />} />
+              <Route
+                element={
+                  <RoleRoute allow={["SUPER_ADMIN", "DIRECTOR", "MANAGER"]} />
+                }
+              >
+                <Route path="/plans" element={<PlanManagementPage />} />
+              </Route>
               <Route path="/agent/pricing" element={<ShopPricingPage />} />
               <Route path="/reports" element={<ReportsPage />} />
             </Route>
