@@ -93,7 +93,15 @@ export function AppRouter() {
                 <Route path="/plans" element={<PlanManagementPage />} />
               </Route>
               <Route path="/agent/pricing" element={<ShopPricingPage />} />
-              <Route path="/reports" element={<ReportsPage />} />
+              <Route
+                element={
+                  <RoleRoute
+                    allow={["SUPER_ADMIN", "DIRECTOR", "MANAGER", "ACCOUNTANT"]}
+                  />
+                }
+              >
+                <Route path="/reports" element={<ReportsPage />} />
+              </Route>
             </Route>
           </Route>
           <Route path="*" element={<NotFound />} />
