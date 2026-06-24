@@ -7,6 +7,7 @@ export type AuthUser = {
   name?: string;
   role?: string;
   tenantId?: string;
+  brandId?: string;
 };
 
 type State = { user: AuthUser | null; ready: boolean };

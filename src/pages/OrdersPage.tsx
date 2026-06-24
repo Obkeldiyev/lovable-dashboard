@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { Download } from "lucide-react";
 import { api } from "@/lib/api";
 import {
   PageHeader,
@@ -37,6 +39,7 @@ type Order = {
   status: OrderStatus;
   warehouse?: { name?: string };
   reservedAt?: string;
+  totalAmount?: number;
 };
 
 // Define status transitions - what statuses can follow the current one
@@ -67,15 +70,27 @@ const STATUS_VARIANTS: Record<
 };
 
 export default function OrdersPage() {
+  const [searchParams] = useSearchParams();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
+  const [priceFilter, setPriceFilter] = useState({
+    min: searchParams.get("minPrice") || "",
+    max: searchParams.get("maxPrice") || "",
+  });
   const queryClient = useQueryClient();
 
   async function loadOrders() {
     setLoading(true);
     try {
-      const { data } = await api.get("/api/orders");
+      const params = new URLSearchParams();
+      if (priceFilter.min) params.set("minPrice", priceFilter.min);
+      if (priceFilter.max) params.set("maxPrice", priceFilter.max);
+      
+      const { data } = await api.get(`/api/orders?${params.toString()}`);
+  
+  // For export - preserve the filter params
+  setPriceFilter({ min: params.get("minPrice") || "", max: params.get("maxPrice") || "" });
       let arr: unknown[] = [];
       if (Array.isArray(data)) {
         arr = data;
@@ -108,6 +123,31 @@ export default function OrdersPage() {
       await loadOrders();
     } catch (error) {
       toast.error("Failed to update order status");
+      console.error(error);
+    }
+  }
+
+  async function handleExport() {
+    try {
+      const params = new URLSearchParams();
+      if (priceFilter.min) params.set("minPrice", priceFilter.min);
+      if (priceFilter.max) params.set("maxPrice", priceFilter.max);
+      
+      const { data } = await api.get(`/api/orders/export?${params.toString()}`, {
+        responseType: "blob"
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `orders_${new Date().toISOString().split("T")[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      
+      toast.success("Export started");
+    } catch (error) {
+      toast.error("Failed to export orders");
       console.error(error);
     }
   }
@@ -194,6 +234,14 @@ export default function OrdersPage() {
       label: "Reserved",
       render: (v: any) => (v ? new Date(v).toLocaleDateString() : "—"),
     },
+    {
+      key: "totalAmount",
+      label: "Amount",
+      type: "number",
+      filterable: true,
+      filterType: "number",
+      render: (v: number) => (v ? `$${v.toFixed(2)}` : "—"),
+    },
   ];
 
   const createConfig: CreateDialogConfig = {
@@ -237,13 +285,23 @@ export default function OrdersPage() {
         title="Orders"
         description="Order reservations"
         action={
-          <Button
-            onClick={() => setCreateOpen(true)}
-            size="sm"
-            className="gap-1.5"
-          >
-            <Plus className="h-4 w-4" /> New
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-1.5"
+              onClick={handleExport}
+            >
+              <Download className="h-4 w-4" /> Export
+            </Button>
+            <Button
+              onClick={() => setCreateOpen(true)}
+              size="sm"
+              className="gap-1.5"
+            >
+              <Plus className="h-4 w-4" /> New
+            </Button>
+          </div>
         }
       />
 

@@ -43,8 +43,19 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const tenant = tokenStore.tenant;
   if (token) config.headers.set("Authorization", `Bearer ${token}`);
   if (tenant) config.headers.set("X-Tenant-Id", tenant);
+  
+  // Add brand ID to requests for AGENT and MANAGER roles
+  if (window.__REDUX_STORE__?.getState()?.auth?.user) {
+    const { role, brandId } = window.__REDUX_STORE__.getState().auth.user;
+    if (brandId && (role === "AGENT" || role === "MANAGER")) {
+      config.headers.set("X-Brand-Id", brandId);
+    }
+  }
+  
   return config;
 });
+
+
 
 let refreshing: Promise<string | null> | null = null;
 
