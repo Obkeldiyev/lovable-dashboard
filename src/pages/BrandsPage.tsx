@@ -8,6 +8,7 @@ export default function BrandsPage() {
       title="Brands"
       description="Product brands"
       path="/api/brands"
+      exportUrl="/api/brands/export"
       columns={[
         { key: "name",      label: "Name",     editable: true },
         { key: "createdAt", label: "Created",  render: (v: any) => v ? new Date(v).toLocaleDateString() : "—" },

@@ -23,7 +23,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Users, Plus, Search, MoreHorizontal, UserCheck, UserX, Trash2,
   Shield, RefreshCw, Mail, Phone, Key, ShieldCheck, ShieldOff,
-  Crown, Edit2,
+  Crown, Edit2, Download,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
@@ -83,6 +83,7 @@ export default function UsersPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
+  const [exporting, setExporting] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [grantOpen, setGrantOpen] = useState<User | null>(null);
   const [editUser, setEditUser] = useState<User | null>(null);
@@ -219,6 +220,27 @@ export default function UsersPage() {
     }
   }
 
+  async function handleExport() {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const { data } = await api.get("/api/users/export", { responseType: "blob" });
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `users_${new Date().toISOString().split("T")[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success("Export downloaded");
+    } catch {
+      toast.error("Export failed");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   if (!isDirectorLevel) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
@@ -257,6 +279,10 @@ export default function UsersPage() {
           <Button variant="outline" size="sm" onClick={loadUsers} className="gap-1.5">
             <RefreshCw className="h-3.5 w-3.5" />
             Refresh
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting} className="gap-1.5">
+            <Download className="h-3.5 w-3.5" />
+            {exporting ? "Exporting…" : "Export"}
           </Button>
           <Button size="sm" onClick={() => setCreateOpen(true)} className="gap-1.5">
             <Plus className="h-3.5 w-3.5" />

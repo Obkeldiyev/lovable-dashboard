@@ -8,6 +8,7 @@ import { deliveriesApi, type Delivery } from "@/features/logistics/api";
 import { useLogisticsSettings } from "@/features/logistics/settings";
 import { Navigation, MapPin, Locate, AlertCircle } from "lucide-react";
 import { useAppSelector } from "@/store";
+import { UuidCell } from "@/components/ui/uuid-cell";
 
 export default function DriverPage() {
   const tenantId = useAppSelector((s) => s.auth.user?.tenantId);
@@ -61,7 +62,7 @@ export default function DriverPage() {
             return (
               <Card key={t.id} className="transition-shadow hover:shadow-md">
                 <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-base">{t.id.slice(0, 8)}</CardTitle>
+                  <CardTitle className="text-base"><UuidCell value={t.id} /></CardTitle>
                   <Badge variant="outline">{t.status}</Badge>
                 </CardHeader>
                 <CardContent className="space-y-3">

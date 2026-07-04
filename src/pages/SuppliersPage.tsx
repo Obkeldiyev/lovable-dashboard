@@ -7,6 +7,7 @@ export default function SuppliersPage() {
       title="Suppliers"
       description="Supplier directory"
       path="/api/suppliers"
+      exportUrl="/api/suppliers/export"
       columns={[
         { key: "name",    label: "Name",    editable: true },
         { key: "email",   label: "Email",   editable: true },

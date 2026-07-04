@@ -126,12 +126,18 @@ export function FetchCombobox({
     brandParams as Record<string, string | undefined>,
   );
 
-  // Preload from cache on mount
+  // Preload from cache whenever the effective URL (key) changes.
+  // Also resets `fetched` when switching to an uncached key, otherwise a
+  // combobox whose fetchUrl changes at runtime (e.g. dependentfetchselect)
+  // would keep showing stale options from its previous URL.
   useEffect(() => {
     const cached = optionCache.get(key);
     if (cached) {
       setOptions(cached);
       setFetched(true);
+    } else {
+      setOptions([]);
+      setFetched(false);
     }
   }, [key]);
 

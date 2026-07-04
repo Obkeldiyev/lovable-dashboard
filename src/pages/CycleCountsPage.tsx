@@ -22,7 +22,8 @@ export default function CycleCountsPage() {
         {
           key: "payload",
           label: "Warehouse",
-          render: (v: any) => (v as any)?.warehouseId?.slice(0, 8) ?? "—",
+          render: (v: any) =>
+            (v as any)?.warehouseId ? <UuidCell value={String((v as any).warehouseId)} /> : "—",
         },
         {
           key: "payload",
@@ -58,13 +59,21 @@ export default function CycleCountsPage() {
             placeholder: "Select warehouse…",
           },
           { key: "scheduledDate", label: "Scheduled Date", type: "date" },
-          // zoneId kept as uuid — /api/zones endpoint may not exist yet
-          // Change to fetchselect once /api/zones is available
+          // Zones are scoped to a warehouse, so this is a dependentfetchselect:
+          // it stays disabled until a warehouse is chosen above, then loads
+          // /api/warehouses/:id/zones. If that endpoint isn't live yet on the
+          // backend, the combobox will just show a "Failed to load options"
+          // state instead of breaking the form — safe to ship ahead of it.
           {
             key: "zoneId",
-            label: "Zone ID (optional)",
-            type: "uuid",
-            placeholder: "Zone UUID (optional)",
+            label: "Zone (optional)",
+            type: "dependentfetchselect",
+            dependsOn: "warehouseId",
+            fetchUrl: (warehouseId) => `/api/warehouses/${warehouseId}/zones`,
+            labelKey: "name",
+            searchKeys: ["code"],
+            placeholder: "Select zone…",
+            placeholderBeforeParent: "Select a warehouse first…",
           },
         ],
       }}

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { UuidCell } from "@/components/ui/uuid-cell";
 
 const STATUS_STEPS: Delivery["status"][] = [
   "ASSIGNED", "PICKED_UP", "IN_TRANSIT", "ARRIVED", "DELIVERED",
@@ -124,7 +125,7 @@ export default function DriverNavigatePage() {
         </Button>
         <div className="flex items-center gap-2">
           <Truck className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">{delivery?.id?.slice(0, 8) ?? "Loading…"}</span>
+          {delivery?.id ? <UuidCell value={delivery.id} /> : <span className="text-sm font-medium">Loading…</span>}
           {delivery?.status && (
             <Badge variant="outline" className="text-xs">{delivery.status.replace(/_/g, " ")}</Badge>
           )}

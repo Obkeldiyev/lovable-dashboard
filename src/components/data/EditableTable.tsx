@@ -1082,30 +1082,32 @@ export function DataPageScaffold({
         title={title}
         description={description}
         action={
-          <div className="flex gap-2">
-            {exportUrl && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="gap-1.5 shrink-0"
-                onClick={handleExport}
-                disabled={exporting}
-              >
-                <Download className="h-4 w-4" />
-                {exporting ? "Exporting…" : "Export"}
-              </Button>
-            )}
-            {createConfig && (
-              <Button
-                size="sm"
-                className="gap-1.5 shrink-0"
-                onClick={() => setCreateOpen(true)}
-              >
-                <Plus className="h-4 w-4" />
-                New
-              </Button>
-            )}
-          </div>
+          (exportUrl || createConfig) ? (
+            <div className="flex gap-2">
+              {exportUrl && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 shrink-0"
+                  onClick={handleExport}
+                  disabled={exporting}
+                >
+                  <Download className="h-4 w-4" />
+                  {exporting ? "Exporting…" : "Export"}
+                </Button>
+              )}
+              {createConfig && (
+                <Button
+                  size="sm"
+                  className="gap-1.5 shrink-0"
+                  onClick={() => setCreateOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  New
+                </Button>
+              )}
+            </div>
+          ) : undefined
         }
       />
 

@@ -77,6 +77,31 @@ export type FetchSelectFieldDef = {
 };
 
 /**
+ * A combobox whose options depend on the current value of another field
+ * (e.g. zones depend on the selected warehouse).
+ *
+ * `fetchUrl` is a builder fn — it receives the parent field's current value
+ * and returns the endpoint to query. The field is disabled until the parent
+ * has a value, and its own value is cleared whenever the parent changes.
+ */
+export type DependentFetchSelectFieldDef = {
+  key: string;
+  label: string;
+  type: "dependentfetchselect";
+  /** key of the field this one depends on, e.g. "warehouseId" */
+  dependsOn: string;
+  /** URL builder: (parentValue) => `/api/warehouses/${parentValue}/zones` */
+  fetchUrl: (parentValue: string) => string;
+  labelKey?: string;
+  valueKey?: string;
+  searchKeys?: string[];
+  required?: boolean;
+  placeholder?: string;
+  /** Shown in place of the combobox while the parent field is empty */
+  placeholderBeforeParent?: string;
+};
+
+/**
  * A repeatable set of sub-fields (line items like PO items, receiving items).
  * The value is stored as an array of objects, one per row.
  */
@@ -93,6 +118,7 @@ export type FieldDef =
   | TextareaFieldDef
   | SelectFieldDef
   | FetchSelectFieldDef
+  | DependentFetchSelectFieldDef
   | ItemsFieldDef;
 
 export type CreateDialogConfig = {
@@ -128,10 +154,13 @@ function ScalarField({
   f,
   value,
   onChange,
+  values,
 }: {
-  f: ScalarFieldDef | TextareaFieldDef | SelectFieldDef | FetchSelectFieldDef;
+  f: ScalarFieldDef | TextareaFieldDef | SelectFieldDef | FetchSelectFieldDef | DependentFetchSelectFieldDef;
   value: string;
   onChange: (v: string) => void;
+  /** Full form values — needed by dependentfetchselect to read its parent field */
+  values: Record<string, string>;
 }) {
   if (f.type === "fetchselect") {
     const ff = f as FetchSelectFieldDef;
@@ -142,6 +171,39 @@ function ScalarField({
         valueKey={ff.valueKey}
         searchKeys={ff.searchKeys}
         placeholder={ff.placeholder ?? `Select ${ff.label.toLowerCase()}…`}
+        value={value}
+        onValueChange={onChange}
+      />
+    );
+  }
+
+  if (f.type === "dependentfetchselect") {
+    const df = f as DependentFetchSelectFieldDef;
+    const parentValue = values[df.dependsOn];
+
+    if (!parentValue) {
+      return (
+        <Button
+          type="button"
+          variant="outline"
+          disabled
+          className="w-full justify-start font-normal h-9 text-sm text-muted-foreground"
+        >
+          {df.placeholderBeforeParent ?? "Select the field above first…"}
+        </Button>
+      );
+    }
+
+    return (
+      <FetchCombobox
+        // Remount when the parent value changes so stale options/state
+        // from the previous parent never leak into the new list.
+        key={parentValue}
+        fetchUrl={df.fetchUrl(parentValue)}
+        labelKey={df.labelKey}
+        valueKey={df.valueKey}
+        searchKeys={df.searchKeys}
+        placeholder={df.placeholder ?? `Select ${df.label.toLowerCase()}…`}
         value={value}
         onValueChange={onChange}
       />
@@ -253,8 +315,12 @@ export function CreateDialog({ open, onOpenChange, config, onCreated }: Props) {
 
   const itemFields = config.fields.filter((f): f is ItemsFieldDef => f.type === "items");
   const scalarFields = config.fields.filter(
-    (f): f is ScalarFieldDef | TextareaFieldDef | SelectFieldDef | FetchSelectFieldDef =>
+    (f): f is ScalarFieldDef | TextareaFieldDef | SelectFieldDef | FetchSelectFieldDef | DependentFetchSelectFieldDef =>
       f.type !== "items",
+  );
+  // Fields that depend on another field's value — used to clear them when their parent changes.
+  const dependentFields = scalarFields.filter(
+    (f): f is DependentFetchSelectFieldDef => f.type === "dependentfetchselect",
   );
 
   function reset() {
@@ -264,7 +330,15 @@ export function CreateDialog({ open, onOpenChange, config, onCreated }: Props) {
   }
 
   function setVal(key: string, val: string) {
-    setValues((v) => ({ ...v, [key]: val }));
+    setValues((v) => {
+      const next = { ...v, [key]: val };
+      // Clear any field whose options depend on this one, since its
+      // previously selected option may no longer be valid.
+      for (const df of dependentFields) {
+        if (df.dependsOn === key) next[df.key] = "";
+      }
+      return next;
+    });
   }
 
   function getItems(
@@ -396,6 +470,7 @@ export function CreateDialog({ open, onOpenChange, config, onCreated }: Props) {
                   f={f}
                   value={values[f.key] ?? ""}
                   onChange={(v) => setVal(f.key, v)}
+                  values={values}
                 />
               </div>
             ))}

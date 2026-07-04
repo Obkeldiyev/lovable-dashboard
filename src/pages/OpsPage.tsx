@@ -11,6 +11,7 @@ import {
   AlertTriangle, CheckCircle2, Clock, Server,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { UuidCell } from "@/components/ui/uuid-cell";
 
 type Task = {
   id: string;
@@ -217,14 +218,14 @@ export default function OpsPage() {
                         <tbody className="divide-y divide-border">
                           {list.map((t) => (
                             <tr key={t.id} className="hover:bg-accent/30 transition-colors">
-                              <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">{t.id.slice(0, 8)}</td>
+                              <td className="px-4 py-2.5"><UuidCell value={t.id} /></td>
                               <td className="px-4 py-2.5">
                                 <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium", STATUS_COLOR[t.status] ?? "bg-muted text-muted-foreground")}>
                                   {t.status}
                                 </span>
                               </td>
-                              <td className="px-4 py-2.5 text-xs text-muted-foreground font-mono">{t.warehouseId?.slice(0, 8) ?? "—"}</td>
-                              <td className="px-4 py-2.5 text-xs text-muted-foreground">{t.assignedUserId?.slice(0, 8) ?? "Unassigned"}</td>
+                              <td className="px-4 py-2.5">{t.warehouseId ? <UuidCell value={t.warehouseId} /> : <span className="text-xs text-muted-foreground">—</span>}</td>
+                              <td className="px-4 py-2.5">{t.assignedUserId ? <UuidCell value={t.assignedUserId} /> : <span className="text-xs text-muted-foreground">Unassigned</span>}</td>
                               <td className="px-4 py-2.5 text-xs text-muted-foreground">
                                 <span className="flex items-center gap-1">
                                   <Clock className="h-3 w-3" />
