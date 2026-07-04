@@ -1,338 +1,492 @@
-import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
-import { Download } from "lucide-react";
+/**
+ * CreateDialog — generic "New record" dialog.
+ *
+ * Supports flat fields AND dynamic line-item arrays for entities like
+ * Purchase Orders, Receivings, and Order Reservations.
+ *
+ * Field types:
+ *  - text / email / tel / number / date / uuid — plain Input
+ *  - textarea — Textarea
+ *  - select — static Select with predefined options
+ *  - fetchselect — FetchCombobox that loads options from an API endpoint
+ *  - items — repeatable table rows, each column can also use fetchselect
+ */
+import { useState } from "react";
 import { api } from "@/lib/api";
-import {
-  PageHeader,
-  EditableTable,
-  type Column,
-} from "@/components/data/EditableTable";
-import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { useAppSelector } from "@/store";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
-  CreateDialog,
-  type CreateDialogConfig,
-} from "@/components/data/CreateDialog";
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { FetchCombobox } from "@/components/ui/fetch-combobox";
+import { Plus, Trash2 } from "lucide-react";
 
-type OrderStatus =
-  | "PENDING"
-  | "CONFIRMED"
-  | "RESERVED"
-  | "PICKING"
-  | "PACKED"
-  | "SHIPPED"
-  | "DELIVERED"
-  | "CANCELLED";
+// ─── Field type definitions ───────────────────────────────────────────────────
 
-type Order = {
-  id: string;
-  externalOrderId?: string;
-  status: OrderStatus;
-  warehouse?: { name?: string };
-  reservedAt?: string;
-  totalAmount?: number;
+export type ScalarFieldDef = {
+  key: string;
+  label: string;
+  type?: "text" | "email" | "tel" | "number" | "date" | "uuid";
+  required?: boolean;
+  placeholder?: string;
 };
 
-// Define status transitions - what statuses can follow the current one
-const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  PENDING: ["CONFIRMED", "CANCELLED"],
-  CONFIRMED: ["RESERVED", "CANCELLED"],
-  RESERVED: ["PICKING", "CANCELLED"],
-  PICKING: ["PACKED", "CANCELLED"],
-  PACKED: ["SHIPPED", "CANCELLED"],
-  SHIPPED: ["DELIVERED"],
-  DELIVERED: [],
-  CANCELLED: [],
+export type TextareaFieldDef = {
+  key: string;
+  label: string;
+  type: "textarea";
+  required?: boolean;
+  placeholder?: string;
 };
 
-// Status badge colors
-const STATUS_VARIANTS: Record<
-  OrderStatus,
-  "default" | "secondary" | "destructive" | "outline"
-> = {
-  PENDING: "outline",
-  CONFIRMED: "secondary",
-  RESERVED: "secondary",
-  PICKING: "secondary",
-  PACKED: "secondary",
-  SHIPPED: "default",
-  DELIVERED: "default",
-  CANCELLED: "destructive",
+export type SelectFieldDef = {
+  key: string;
+  label: string;
+  type: "select";
+  required?: boolean;
+  options: { value: string; label: string }[];
 };
 
-export default function OrdersPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [priceFilter, setPriceFilter] = useState({
-    min: searchParams.get("minPrice") || "",
-    max: searchParams.get("maxPrice") || "",
-  });
-  const queryClient = useQueryClient();
+/**
+ * A combobox that fetches its options from an API endpoint.
+ * The user sees names/labels and the form stores UUIDs.
+ */
+export type FetchSelectFieldDef = {
+  key: string;
+  label: string;
+  type: "fetchselect";
+  /** API endpoint to GET options from, e.g. "/api/warehouses" */
+  fetchUrl: string;
+  /** Field on each item to display as the option label. Default: "name" */
+  labelKey?: string;
+  /** Field on each item to use as the form value (UUID). Default: "id" */
+  valueKey?: string;
+  /** Extra fields to include in the search index. E.g. ["sku", "code"] */
+  searchKeys?: string[];
+  required?: boolean;
+  placeholder?: string;
+};
 
-  async function loadOrders() {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (priceFilter.min) params.set("minPrice", priceFilter.min);
-      if (priceFilter.max) params.set("maxPrice", priceFilter.max);
+/**
+ * A repeatable set of sub-fields (line items like PO items, receiving items).
+ * The value is stored as an array of objects, one per row.
+ */
+export type ItemsFieldDef = {
+  key: string;
+  label: string;
+  type: "items";
+  required?: boolean;
+  columns: (ScalarFieldDef | SelectFieldDef | FetchSelectFieldDef)[];
+};
 
-      const { data } = await api.get(`/api/orders?${params.toString()}`);
+export type FieldDef =
+  | ScalarFieldDef
+  | TextareaFieldDef
+  | SelectFieldDef
+  | FetchSelectFieldDef
+  | ItemsFieldDef;
 
-      // For export - preserve the filter params
-      setSearchParams(params, { replace: true });
-      let arr: unknown[] = [];
-      if (Array.isArray(data)) {
-        arr = data;
-      } else if (Array.isArray(data?.data)) {
-        arr = data.data;
-      } else if (Array.isArray(data?.items)) {
-        arr = data.items;
-      }
-      setOrders(arr as Order[]);
-    } catch (error) {
-      toast.error("Failed to load orders");
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
+export type CreateDialogConfig = {
+  title: string;
+  postUrl: string;
+  fields: FieldDef[];
+  /** Extra computed fields merged into the body after form values are collected */
+  extraBody?: (values: Record<string, string>, items: Record<string, string>[]) => Record<string, unknown>;
+};
+
+type Props = {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  config: CreateDialogConfig;
+  onCreated: (record: unknown) => void;
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function emptyRow(columns: (ScalarFieldDef | SelectFieldDef | FetchSelectFieldDef)[]): Record<string, string> {
+  return Object.fromEntries(columns.map((c) => [c.key, ""]));
+}
+
+function castRowValue(val: string, type?: string): unknown {
+  if (type === "number") return val === "" ? undefined : Number(val);
+  return val === "" ? undefined : val;
+}
+
+// ─── Field renderer helpers ───────────────────────────────────────────────────
+
+/** Renders a scalar (non-items) field */
+function ScalarField({
+  f,
+  value,
+  onChange,
+}: {
+  f: ScalarFieldDef | TextareaFieldDef | SelectFieldDef | FetchSelectFieldDef;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  if (f.type === "fetchselect") {
+    const ff = f as FetchSelectFieldDef;
+    return (
+      <FetchCombobox
+        fetchUrl={ff.fetchUrl}
+        labelKey={ff.labelKey}
+        valueKey={ff.valueKey}
+        searchKeys={ff.searchKeys}
+        placeholder={ff.placeholder ?? `Select ${ff.label.toLowerCase()}…`}
+        value={value}
+        onValueChange={onChange}
+      />
+    );
   }
 
-  useEffect(() => {
-    loadOrders();
-    document.title = "Orders · VMS";
-  }, [priceFilter.min, priceFilter.max]);
-
-  async function handleStatusChange(orderId: string, newStatus: OrderStatus) {
-    try {
-      await api.patch(`/api/orders/${orderId}`, { status: newStatus });
-      toast.success(`Order status updated to ${newStatus}`);
-
-      // Invalidate queries and reload
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
-      await loadOrders();
-    } catch (error) {
-      toast.error("Failed to update order status");
-      console.error(error);
-    }
+  if (f.type === "select") {
+    return (
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger id={f.key} className="h-9">
+          <SelectValue placeholder={`Select ${f.label.toLowerCase()}…`} />
+        </SelectTrigger>
+        <SelectContent>
+          {(f as SelectFieldDef).options.map((o) => (
+            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
   }
 
-  async function handleExport() {
-    try {
-      const params = new URLSearchParams();
-      if (priceFilter.min) params.set("minPrice", priceFilter.min);
-      if (priceFilter.max) params.set("maxPrice", priceFilter.max);
-
-      const { data } = await api.get(
-        `/api/orders/export?${params.toString()}`,
-        {
-          responseType: "blob",
-        },
-      );
-
-      const url = window.URL.createObjectURL(new Blob([data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute(
-        "download",
-        `orders_${new Date().toISOString().split("T")[0]}.xlsx`,
-      );
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-
-      toast.success("Export started");
-    } catch (error) {
-      toast.error("Failed to export orders");
-      console.error(error);
-    }
+  if (f.type === "textarea") {
+    return (
+      <Textarea
+        id={f.key}
+        placeholder={(f as TextareaFieldDef).placeholder ?? `Enter ${f.label.toLowerCase()}…`}
+        rows={2}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="resize-none text-sm"
+      />
+    );
   }
 
-  async function handleSave(id: string | number, patch: Partial<Order>) {
-    await api.put(`/api/orders/${id}`, patch);
+  // text / email / tel / number / date / uuid
+  return (
+    <Input
+      id={f.key}
+      type={(f as ScalarFieldDef).type === "uuid" ? "text" : ((f as ScalarFieldDef).type ?? "text")}
+      placeholder={(f as ScalarFieldDef).placeholder ?? `Enter ${f.label.toLowerCase()}…`}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="h-9 text-sm"
+    />
+  );
+}
+
+/** Renders a single cell inside an items row */
+function RowCell({
+  col,
+  value,
+  onChange,
+}: {
+  col: ScalarFieldDef | SelectFieldDef | FetchSelectFieldDef;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  if (col.type === "fetchselect") {
+    const fc = col as FetchSelectFieldDef;
+    return (
+      <FetchCombobox
+        fetchUrl={fc.fetchUrl}
+        labelKey={fc.labelKey}
+        valueKey={fc.valueKey}
+        searchKeys={fc.searchKeys}
+        placeholder={fc.placeholder ?? col.label}
+        value={value}
+        onValueChange={onChange}
+        compact
+      />
+    );
   }
 
-  const columns: Column<Order>[] = [
-    {
-      key: "id",
-      label: "ID",
-      render: (v: any) => String(v).slice(0, 8),
-    },
-    {
-      key: "externalOrderId",
-      label: "Order Ref",
-      render: (v: any) => String(v ?? "").slice(0, 8),
-    },
-    {
-      key: "status",
-      label: "Status",
-      render: (val: any, row: Order) => {
-        const status = val as OrderStatus;
-        const nextStatuses = STATUS_TRANSITIONS[status] || [];
-
-        // If no transitions available, just show the badge
-        if (nextStatuses.length === 0) {
-          return (
-            <Badge
-              variant={STATUS_VARIANTS[status]}
-              className="text-xs font-medium"
-            >
-              {status}
-            </Badge>
-          );
-        }
-
-        // Show interactive dropdown
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-auto p-0 hover:bg-transparent"
-              >
-                <Badge
-                  variant={STATUS_VARIANTS[status]}
-                  className="text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity"
-                >
-                  {status}
-                </Badge>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              {nextStatuses.map((nextStatus) => (
-                <DropdownMenuItem
-                  key={nextStatus}
-                  onClick={() => handleStatusChange(row.id, nextStatus)}
-                  className="cursor-pointer"
-                >
-                  <Badge
-                    variant={STATUS_VARIANTS[nextStatus]}
-                    className="text-xs font-medium mr-2"
-                  >
-                    {nextStatus}
-                  </Badge>
-                  Change to {nextStatus}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
-    {
-      key: "warehouse",
-      label: "Warehouse",
-      render: (v: any) => v?.name ?? "—",
-    },
-    {
-      key: "reservedAt",
-      label: "Reserved",
-      render: (v: any) => (v ? new Date(v).toLocaleDateString() : "—"),
-    },
-    {
-      key: "totalAmount",
-      label: "Amount",
-      type: "number",
-      filterable: true,
-      filterType: "number",
-      render: (v: number) => (v ? `$${v.toFixed(2)}` : "—"),
-    },
-  ];
-
-  const createConfig: CreateDialogConfig = {
-    title: "Order Reservation",
-    postUrl: "/api/orders",
-    fields: [
-      {
-        key: "warehouseId",
-        label: "Warehouse ID",
-        required: true,
-        type: "uuid",
-        placeholder: "Paste warehouse UUID",
-      },
-      {
-        key: "items",
-        label: "Reserved Items",
-        type: "items",
-        required: true,
-        columns: [
-          {
-            key: "productId",
-            label: "Product ID",
-            type: "uuid",
-            placeholder: "Product UUID",
-          },
-          {
-            key: "qtyReserved",
-            label: "Qty",
-            type: "number",
-            placeholder: "1",
-          },
-        ],
-      },
-    ],
-    extraBody: () => ({ externalOrderId: crypto.randomUUID() }),
-  };
+  if (col.type === "select") {
+    return (
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="h-7 text-xs">
+          <SelectValue placeholder={col.label} />
+        </SelectTrigger>
+        <SelectContent>
+          {(col as SelectFieldDef).options.map((o) => (
+            <SelectItem key={o.value} value={o.value} className="text-xs">
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  }
 
   return (
-    <>
-      <PageHeader
-        title="Orders"
-        description="Order reservations"
-        action={
-          <div className="flex gap-2">
+    <Input
+      type={(col as ScalarFieldDef).type === "number" ? "number" : "text"}
+      placeholder={(col as ScalarFieldDef).placeholder ?? col.label}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="h-7 text-xs"
+    />
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
+export function CreateDialog({ open, onOpenChange, config, onCreated }: Props) {
+  const tenantId = useAppSelector((s) => s.auth.user?.tenantId ?? "");
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [itemsMap, setItemsMap] = useState<Record<string, Record<string, string>[]>>({});
+  const [saving, setSaving] = useState(false);
+
+  const itemFields = config.fields.filter((f): f is ItemsFieldDef => f.type === "items");
+  const scalarFields = config.fields.filter(
+    (f): f is ScalarFieldDef | TextareaFieldDef | SelectFieldDef | FetchSelectFieldDef =>
+      f.type !== "items",
+  );
+
+  function reset() {
+    setValues({});
+    setItemsMap({});
+    setSaving(false);
+  }
+
+  function setVal(key: string, val: string) {
+    setValues((v) => ({ ...v, [key]: val }));
+  }
+
+  function getItems(
+    key: string,
+    columns: (ScalarFieldDef | SelectFieldDef | FetchSelectFieldDef)[],
+  ): Record<string, string>[] {
+    return itemsMap[key] ?? [emptyRow(columns)];
+  }
+
+  function addRow(key: string, columns: (ScalarFieldDef | SelectFieldDef | FetchSelectFieldDef)[]) {
+    setItemsMap((m) => ({
+      ...m,
+      [key]: [...(m[key] ?? [emptyRow(columns)]), emptyRow(columns)],
+    }));
+  }
+
+  function removeRow(key: string, idx: number) {
+    setItemsMap((m) => {
+      const rows = m[key] ?? [];
+      if (rows.length <= 1) return m;
+      return { ...m, [key]: rows.filter((_, i) => i !== idx) };
+    });
+  }
+
+  function setRowVal(key: string, idx: number, col: string, val: string) {
+    setItemsMap((m) => {
+      const rows = [...(m[key] ?? [])];
+      rows[idx] = { ...rows[idx], [col]: val };
+      return { ...m, [key]: rows };
+    });
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    // Validate required scalar fields
+    for (const f of scalarFields) {
+      if (f.required && !values[f.key]?.trim()) {
+        toast.error(`${f.label} is required`);
+        return;
+      }
+    }
+
+    // Validate required item fields
+    for (const f of itemFields) {
+      const rows = getItems(f.key, f.columns);
+      if (f.required) {
+        const hasData = rows.some((r) => Object.values(r).some((v) => v.trim() !== ""));
+        if (!hasData) {
+          toast.error(`At least one ${f.label} row is required`);
+          return;
+        }
+      }
+    }
+
+    // Build body
+    const body: Record<string, unknown> = { tenantId };
+
+    for (const f of scalarFields) {
+      const val = values[f.key];
+      if (val === undefined || val === "") continue;
+      body[f.key] = (f as ScalarFieldDef).type === "number" ? Number(val) : val;
+    }
+
+    for (const f of itemFields) {
+      const rows = getItems(f.key, f.columns);
+      const coerced = rows
+        .filter((r) => Object.values(r).some((v) => v.trim() !== ""))
+        .map((r) => {
+          const obj: Record<string, unknown> = {};
+          for (const col of f.columns) {
+            const v = r[col.key];
+            const cast = castRowValue(v ?? "", (col as ScalarFieldDef).type);
+            if (cast !== undefined) obj[col.key] = cast;
+          }
+          return obj;
+        });
+      if (coerced.length > 0) body[f.key] = coerced;
+    }
+
+    if (config.extraBody) {
+      const firstItems =
+        itemFields.length > 0 ? getItems(itemFields[0].key, itemFields[0].columns) : [];
+      Object.assign(body, config.extraBody(values, firstItems));
+    }
+
+    setSaving(true);
+    try {
+      const { data } = await api.post(config.postUrl, body);
+      const record = data?.data ?? data;
+      toast.success(`${config.title} created`);
+      onCreated(record);
+      reset();
+      onOpenChange(false);
+    } catch (err: any) {
+      const msg = err?.response?.data?.error ?? `Failed to create ${config.title}`;
+      toast.error(msg);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!saving) {
+          onOpenChange(v);
+          if (!v) reset();
+        }
+      }}
+    >
+      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle>New {config.title}</DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-0 min-h-0">
+          <div className="overflow-y-auto pr-1 space-y-3 py-1 flex-1">
+
+            {/* ── Scalar / FetchSelect / Select / Textarea fields ── */}
+            {scalarFields.map((f) => (
+              <div key={f.key} className="space-y-1.5">
+                <Label htmlFor={f.key} className="text-sm">
+                  {f.label}
+                  {f.required && <span className="text-destructive ml-0.5">*</span>}
+                </Label>
+                <ScalarField
+                  f={f}
+                  value={values[f.key] ?? ""}
+                  onChange={(v) => setVal(f.key, v)}
+                />
+              </div>
+            ))}
+
+            {/* ── Items fields ── */}
+            {itemFields.map((f) => {
+              const rows = getItems(f.key, f.columns);
+              return (
+                <div key={f.key} className="space-y-2">
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-semibold">
+                      {f.label}
+                      {f.required && <span className="text-destructive ml-0.5">*</span>}
+                    </Label>
+                    <Button
+                      type="button"
+                      size="xs"
+                      variant="outline"
+                      onClick={() => addRow(f.key, f.columns)}
+                    >
+                      <Plus className="h-3 w-3 mr-1" /> Add row
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {/* Column headers */}
+                    <div
+                      className="grid gap-1.5 text-xs font-medium text-muted-foreground"
+                      style={{
+                        gridTemplateColumns: `repeat(${f.columns.length}, 1fr) 24px`,
+                      }}
+                    >
+                      {f.columns.map((c) => (
+                        <span key={c.key}>{c.label}</span>
+                      ))}
+                      <span />
+                    </div>
+
+                    {rows.map((row, idx) => (
+                      <div
+                        key={idx}
+                        className="grid gap-1.5 items-center"
+                        style={{
+                          gridTemplateColumns: `repeat(${f.columns.length}, 1fr) 24px`,
+                        }}
+                      >
+                        {f.columns.map((col) => (
+                          <RowCell
+                            key={col.key}
+                            col={col}
+                            value={row[col.key] ?? ""}
+                            onChange={(v) => setRowVal(f.key, idx, col.key, v)}
+                          />
+                        ))}
+                        <Button
+                          type="button"
+                          size="icon-xs"
+                          variant="ghost-destructive"
+                          onClick={() => removeRow(f.key, idx)}
+                          disabled={rows.length === 1}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <DialogFooter className="pt-3 gap-2 shrink-0 border-t mt-3">
             <Button
+              type="button"
               variant="outline"
               size="sm"
-              className="gap-1.5"
-              onClick={handleExport}
+              disabled={saving}
+              onClick={() => {
+                onOpenChange(false);
+                reset();
+              }}
             >
-              <Download className="h-4 w-4" /> Export
+              Cancel
             </Button>
-            <Button
-              onClick={() => setCreateOpen(true)}
-              size="sm"
-              className="gap-1.5"
-            >
-              <Plus className="h-4 w-4" /> New
+            <Button type="submit" size="sm" disabled={saving}>
+              {saving ? "Creating…" : `Create ${config.title}`}
             </Button>
-          </div>
-        }
-      />
-
-      {loading ? (
-        <div className="rounded-xl border border-dashed border-border bg-card p-12 text-center">
-          <p className="text-sm text-muted-foreground">Loading…</p>
-        </div>
-      ) : (
-        <EditableTable
-          rows={orders}
-          columns={columns}
-          onSave={handleSave}
-          empty="No orders found"
-        />
-      )}
-
-      <CreateDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        config={createConfig}
-        onSuccess={() => {
-          setCreateOpen(false);
-          loadOrders();
-        }}
-      />
-    </>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

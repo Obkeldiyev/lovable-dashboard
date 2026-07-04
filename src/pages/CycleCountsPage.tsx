@@ -13,19 +13,54 @@ export default function CycleCountsPage() {
       path="/api/cycle-counts"
       deletable={false}
       columns={[
-        { key: "id",        label: "ID",        render: (v: any) => String(v).slice(0, 8) },
-        { key: "payload",   label: "Warehouse", render: (v: any) => (v as any)?.warehouseId?.slice(0, 8) ?? "—" },
-        { key: "payload",   label: "Status",    render: (v: any) => (v as any)?.status ?? "—" },
-        { key: "payload",   label: "Scheduled", render: (v: any) => (v as any)?.scheduledDate ? new Date((v as any).scheduledDate).toLocaleDateString() : "—" },
-        { key: "createdAt", label: "Created",   render: (v: any) => v ? new Date(v).toLocaleDateString() : "—" },
+        { key: "id", label: "ID", render: (v: any) => String(v).slice(0, 8) },
+        {
+          key: "payload",
+          label: "Warehouse",
+          render: (v: any) => (v as any)?.warehouseId?.slice(0, 8) ?? "—",
+        },
+        {
+          key: "payload",
+          label: "Status",
+          render: (v: any) => (v as any)?.status ?? "—",
+        },
+        {
+          key: "payload",
+          label: "Scheduled",
+          render: (v: any) =>
+            (v as any)?.scheduledDate
+              ? new Date((v as any).scheduledDate).toLocaleDateString()
+              : "—",
+        },
+        {
+          key: "createdAt",
+          label: "Created",
+          render: (v: any) => (v ? new Date(v).toLocaleDateString() : "—"),
+        },
       ]}
       createConfig={{
         title: "Cycle Count",
         postUrl: "/api/cycle-counts",
         fields: [
-          { key: "warehouseId",   label: "Warehouse ID",   required: true, type: "uuid", placeholder: "Warehouse UUID" },
+          {
+            key: "warehouseId",
+            label: "Warehouse",
+            required: true,
+            type: "fetchselect",
+            fetchUrl: "/api/warehouses",
+            labelKey: "name",
+            searchKeys: ["code"],
+            placeholder: "Select warehouse…",
+          },
           { key: "scheduledDate", label: "Scheduled Date", type: "date" },
-          { key: "zoneId",        label: "Zone ID",        type: "uuid", placeholder: "Limit to a zone (optional)" },
+          // zoneId kept as uuid — /api/zones endpoint may not exist yet
+          // Change to fetchselect once /api/zones is available
+          {
+            key: "zoneId",
+            label: "Zone ID (optional)",
+            type: "uuid",
+            placeholder: "Zone UUID (optional)",
+          },
         ],
       }}
     />
