@@ -1,10 +1,11 @@
 /**
- * FetchCombobox — a Popover+Command combobox that fetches its options from an API.
+ * FetchCombobox — Popover+Command combobox that fetches options from an API.
  *
  * Features:
  * - Lazy fetch on first open
- * - Module-level cache (one network request per URL per page load)
+ * - Module-level cache (one request per URL per page load)
  * - Searchable by name + extra keys (e.g. SKU, code)
+ * - Respects brand filter (AGENT/MANAGER role restrictions)
  * - Compact prop for use inside items table rows
  *
  * Usage (flat field):
@@ -15,17 +16,6 @@
  *     value={warehouseId}
  *     onValueChange={setWarehouseId}
  *     placeholder="Select warehouse…"
- *   />
- *
- * Usage (in items row, compact):
- *   <FetchCombobox
- *     fetchUrl="/api/products"
- *     labelKey="name"
- *     searchKeys={["sku"]}
- *     value={row.productId}
- *     onValueChange={(v) => setRowVal("productId", v)}
- *     placeholder="Product…"
- *     compact
  *   />
  */
 import { useState, useEffect } from "react";
@@ -45,41 +35,50 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { api } from "@/lib/api";
+import { api, getBrandFilter } from "@/lib/api";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types ─────────────────────────────────────────────────────────────────
 
 export type FetchComboboxProps = {
   fetchUrl: string;
   value: string;
   onValueChange: (value: string) => void;
-  /** Which field on each item to show as the primary label. Default: "name" */
+  /** Field to display as label. Default: "name" */
   labelKey?: string;
-  /** Which field on each item to use as the selected value (UUID). Default: "id" */
+  /** Field used as the stored value (UUID). Default: "id" */
   valueKey?: string;
-  /** Additional fields to include in search text. E.g. ["sku", "code"] */
+  /** Extra fields included in search text. E.g. ["sku", "code"] */
   searchKeys?: string[];
   placeholder?: string;
   className?: string;
   disabled?: boolean;
   /** Compact mode for use inside items table rows (h-7, text-xs) */
   compact?: boolean;
+  /** Skip brand filter even for brand-restricted roles (e.g. warehouse list) */
+  noBrandFilter?: boolean;
 };
 
 type Option = {
   value: string;
   label: string;
-  /** Secondary search text shown below the label */
   sublabel?: string;
-  /** Combined search text for cmdk filtering */
   searchText: string;
 };
 
-// ─── Module-level cache ───────────────────────────────────────────────────────
-// Prevents re-fetching the same endpoint when multiple rows are rendered
-// (e.g. 5 product rows in an Order form all sharing /api/products)
+// ─── Module-level cache ─────────────────────────────────────────────────────
+// One network request per URL per page load.
+// Key includes brand filter state so AGENT vs ADMIN see different caches.
 
 const optionCache = new Map<string, Option[]>();
+
+function cacheKey(
+  url: string,
+  params: Record<string, string | undefined>,
+): string {
+  const filtered = Object.entries(params).filter(([, v]) => v != null);
+  if (filtered.length === 0) return url;
+  return `${url}?${filtered.map(([k, v]) => `${k}=${v}`).join("&")}`;
+}
 
 function extractArray(data: unknown): unknown[] {
   if (Array.isArray(data)) return data;
@@ -88,14 +87,18 @@ function extractArray(data: unknown): unknown[] {
     if (Array.isArray(d.data)) return d.data;
     if (Array.isArray(d.items)) return d.items;
     if (Array.isArray(d.results)) return d.results;
-    if (d.data && typeof d.data === "object" && Array.isArray((d.data as any).items)) {
+    if (
+      d.data &&
+      typeof d.data === "object" &&
+      Array.isArray((d.data as any).items)
+    ) {
       return (d.data as any).items;
     }
   }
   return [];
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Component ──────────────────────────────────────────────────────────────
 
 export function FetchCombobox({
   fetchUrl,
@@ -108,12 +111,29 @@ export function FetchCombobox({
   className,
   disabled,
   compact = false,
+  noBrandFilter = false,
 }: FetchComboboxProps) {
   const [open, setOpen] = useState(false);
-  const [options, setOptions] = useState<Option[]>(() => optionCache.get(fetchUrl) ?? []);
+  const [options, setOptions] = useState<Option[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [fetched, setFetched] = useState(() => optionCache.has(fetchUrl));
+  const [fetched, setFetched] = useState(false);
+
+  // Build params once per render — brand filter applied unless opted out
+  const brandParams = noBrandFilter ? {} : getBrandFilter();
+  const key = cacheKey(
+    fetchUrl,
+    brandParams as Record<string, string | undefined>,
+  );
+
+  // Preload from cache on mount
+  useEffect(() => {
+    const cached = optionCache.get(key);
+    if (cached) {
+      setOptions(cached);
+      setFetched(true);
+    }
+  }, [key]);
 
   useEffect(() => {
     if (!open || fetched) return;
@@ -122,32 +142,33 @@ export function FetchCombobox({
     setError(null);
 
     api
-      .get(fetchUrl)
+      .get(fetchUrl, { params: brandParams })
       .then(({ data }) => {
         const arr = extractArray(data);
         const mapped: Option[] = arr.map((item: any) => {
-          const labelVal = String(item[labelKey] ?? item.name ?? item.id ?? "—");
+          const labelVal = String(
+            item[labelKey] ?? item.name ?? item.id ?? "—",
+          );
           const extraParts = searchKeys
             .filter((k) => k !== labelKey && item[k] != null)
             .map((k) => String(item[k]));
           return {
             value: String(item[valueKey] ?? item.id ?? ""),
             label: labelVal,
-            sublabel: extraParts.length > 0 ? extraParts.join(" · ") : undefined,
-            // cmdk searches this string
+            sublabel:
+              extraParts.length > 0 ? extraParts.join(" · ") : undefined,
             searchText: [labelVal, ...extraParts].join(" "),
           };
         });
-        optionCache.set(fetchUrl, mapped);
+        optionCache.set(key, mapped);
         setOptions(mapped);
         setFetched(true);
       })
       .catch(() => setError("Failed to load options"))
       .finally(() => setLoading(false));
-  }, [open, fetched, fetchUrl]);
+  }, [open, fetched, key]);
 
   const selected = options.find((o) => o.value === value);
-
   const triggerH = compact ? "h-7" : "h-9";
   const triggerText = compact ? "text-xs" : "text-sm";
 
@@ -178,13 +199,11 @@ export function FetchCombobox({
       <PopoverContent
         className="w-[--radix-popover-trigger-width] min-w-[200px] p-0"
         align="start"
-        // Keep popover above dialog stacking context
         style={{ zIndex: 9999 }}
       >
         <Command
-          // Tell cmdk to filter by our searchText, not the displayed value
-          filter={(value, search) =>
-            value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
+          filter={(itemValue, search) =>
+            itemValue.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
           }
         >
           <CommandInput placeholder="Search…" className="h-9" />
@@ -197,7 +216,9 @@ export function FetchCombobox({
             )}
 
             {!loading && error && (
-              <div className="py-4 text-center text-sm text-destructive">{error}</div>
+              <div className="py-4 text-center text-sm text-destructive">
+                {error}
+              </div>
             )}
 
             {!loading && !error && (
@@ -207,7 +228,6 @@ export function FetchCombobox({
                   {options.map((opt) => (
                     <CommandItem
                       key={opt.value}
-                      // cmdk uses this to filter
                       value={opt.searchText}
                       onSelect={() => {
                         onValueChange(opt.value === value ? "" : opt.value);

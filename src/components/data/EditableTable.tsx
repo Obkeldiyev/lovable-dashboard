@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +34,7 @@ import {
   ChevronRight,
   Copy,
   SlidersHorizontal,
+  Download,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
@@ -999,6 +1001,7 @@ export function DataPageScaffold({
   saveEndpoint,
   deleteEndpoint,
   createConfig,
+  exportUrl,
 }: {
   title: string;
   description?: string;
@@ -1012,6 +1015,8 @@ export function DataPageScaffold({
   ) => Promise<void>;
   deleteEndpoint?: (id: string | number) => Promise<void>;
   createConfig?: CreateDialogConfig;
+  /** If provided, shows an Export button that downloads from this URL as .xlsx */
+  exportUrl?: string;
 }) {
   const [rows, setRows] = useState<
     Array<Record<string, unknown> & { id: string | number }>
@@ -1019,6 +1024,7 @@ export function DataPageScaffold({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   function load() {
     setLoading(true);
@@ -1048,20 +1054,58 @@ export function DataPageScaffold({
     };
   }, [fetcher]);
 
+  async function handleExport() {
+    if (!exportUrl || exporting) return;
+    setExporting(true);
+    try {
+      const { data } = await api.get(exportUrl, { responseType: "blob" });
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement("a");
+      link.href = url;
+      const filename = `${title.toLowerCase().replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.xlsx`;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success("Export downloaded");
+    } catch {
+      toast.error("Export failed");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <div>
       <PageHeader
         title={title}
         description={description}
         action={
-          <Button
-            size="sm"
-            className="gap-1.5 shrink-0"
-            onClick={createConfig ? () => setCreateOpen(true) : undefined}
-          >
-            <Plus className="h-4 w-4" />
-            New
-          </Button>
+          <div className="flex gap-2">
+            {exportUrl && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 shrink-0"
+                onClick={handleExport}
+                disabled={exporting}
+              >
+                <Download className="h-4 w-4" />
+                {exporting ? "Exporting…" : "Export"}
+              </Button>
+            )}
+            {createConfig && (
+              <Button
+                size="sm"
+                className="gap-1.5 shrink-0"
+                onClick={() => setCreateOpen(true)}
+              >
+                <Plus className="h-4 w-4" />
+                New
+              </Button>
+            )}
+          </div>
         }
       />
 

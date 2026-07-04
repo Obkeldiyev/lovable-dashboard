@@ -1,492 +1,337 @@
-/**
- * CreateDialog — generic "New record" dialog.
- *
- * Supports flat fields AND dynamic line-item arrays for entities like
- * Purchase Orders, Receivings, and Order Reservations.
- *
- * Field types:
- *  - text / email / tel / number / date / uuid — plain Input
- *  - textarea — Textarea
- *  - select — static Select with predefined options
- *  - fetchselect — FetchCombobox that loads options from an API endpoint
- *  - items — repeatable table rows, each column can also use fetchselect
- */
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { Download, X } from "lucide-react";
 import { api } from "@/lib/api";
-import { useAppSelector } from "@/store";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
+  PageHeader,
+  EditableTable,
+  type Column,
+} from "@/components/data/EditableTable";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
+import { Plus } from "lucide-react";
+import { toast } from "sonner";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import { FetchCombobox } from "@/components/ui/fetch-combobox";
-import { Plus, Trash2 } from "lucide-react";
+  CreateDialog,
+  type CreateDialogConfig,
+} from "@/components/data/CreateDialog";
+import { UuidCell } from "@/components/ui/uuid-cell";
 
-// ─── Field type definitions ───────────────────────────────────────────────────
+type OrderStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "RESERVED"
+  | "PICKING"
+  | "PACKED"
+  | "SHIPPED"
+  | "DELIVERED"
+  | "CANCELLED";
 
-export type ScalarFieldDef = {
-  key: string;
-  label: string;
-  type?: "text" | "email" | "tel" | "number" | "date" | "uuid";
-  required?: boolean;
-  placeholder?: string;
+type Order = {
+  id: string;
+  externalOrderId?: string;
+  status: OrderStatus;
+  warehouse?: { name?: string };
+  reservedAt?: string;
+  totalAmount?: number;
 };
 
-export type TextareaFieldDef = {
-  key: string;
-  label: string;
-  type: "textarea";
-  required?: boolean;
-  placeholder?: string;
+const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  PENDING: ["CONFIRMED", "CANCELLED"],
+  CONFIRMED: ["RESERVED", "CANCELLED"],
+  RESERVED: ["PICKING", "CANCELLED"],
+  PICKING: ["PACKED", "CANCELLED"],
+  PACKED: ["SHIPPED", "CANCELLED"],
+  SHIPPED: ["DELIVERED"],
+  DELIVERED: [],
+  CANCELLED: [],
 };
 
-export type SelectFieldDef = {
-  key: string;
-  label: string;
-  type: "select";
-  required?: boolean;
-  options: { value: string; label: string }[];
+const STATUS_VARIANTS: Record<
+  OrderStatus,
+  "default" | "secondary" | "destructive" | "outline"
+> = {
+  PENDING: "outline",
+  CONFIRMED: "secondary",
+  RESERVED: "secondary",
+  PICKING: "secondary",
+  PACKED: "secondary",
+  SHIPPED: "default",
+  DELIVERED: "default",
+  CANCELLED: "destructive",
 };
 
-/**
- * A combobox that fetches its options from an API endpoint.
- * The user sees names/labels and the form stores UUIDs.
- */
-export type FetchSelectFieldDef = {
-  key: string;
-  label: string;
-  type: "fetchselect";
-  /** API endpoint to GET options from, e.g. "/api/warehouses" */
-  fetchUrl: string;
-  /** Field on each item to display as the option label. Default: "name" */
-  labelKey?: string;
-  /** Field on each item to use as the form value (UUID). Default: "id" */
-  valueKey?: string;
-  /** Extra fields to include in the search index. E.g. ["sku", "code"] */
-  searchKeys?: string[];
-  required?: boolean;
-  placeholder?: string;
-};
+export default function OrdersPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [priceFilter, setPriceFilter] = useState({
+    min: searchParams.get("minPrice") || "",
+    max: searchParams.get("maxPrice") || "",
+  });
+  const queryClient = useQueryClient();
 
-/**
- * A repeatable set of sub-fields (line items like PO items, receiving items).
- * The value is stored as an array of objects, one per row.
- */
-export type ItemsFieldDef = {
-  key: string;
-  label: string;
-  type: "items";
-  required?: boolean;
-  columns: (ScalarFieldDef | SelectFieldDef | FetchSelectFieldDef)[];
-};
+  const hasFilter = priceFilter.min !== "" || priceFilter.max !== "";
 
-export type FieldDef =
-  | ScalarFieldDef
-  | TextareaFieldDef
-  | SelectFieldDef
-  | FetchSelectFieldDef
-  | ItemsFieldDef;
-
-export type CreateDialogConfig = {
-  title: string;
-  postUrl: string;
-  fields: FieldDef[];
-  /** Extra computed fields merged into the body after form values are collected */
-  extraBody?: (values: Record<string, string>, items: Record<string, string>[]) => Record<string, unknown>;
-};
-
-type Props = {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  config: CreateDialogConfig;
-  onCreated: (record: unknown) => void;
-};
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function emptyRow(columns: (ScalarFieldDef | SelectFieldDef | FetchSelectFieldDef)[]): Record<string, string> {
-  return Object.fromEntries(columns.map((c) => [c.key, ""]));
-}
-
-function castRowValue(val: string, type?: string): unknown {
-  if (type === "number") return val === "" ? undefined : Number(val);
-  return val === "" ? undefined : val;
-}
-
-// ─── Field renderer helpers ───────────────────────────────────────────────────
-
-/** Renders a scalar (non-items) field */
-function ScalarField({
-  f,
-  value,
-  onChange,
-}: {
-  f: ScalarFieldDef | TextareaFieldDef | SelectFieldDef | FetchSelectFieldDef;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  if (f.type === "fetchselect") {
-    const ff = f as FetchSelectFieldDef;
-    return (
-      <FetchCombobox
-        fetchUrl={ff.fetchUrl}
-        labelKey={ff.labelKey}
-        valueKey={ff.valueKey}
-        searchKeys={ff.searchKeys}
-        placeholder={ff.placeholder ?? `Select ${ff.label.toLowerCase()}…`}
-        value={value}
-        onValueChange={onChange}
-      />
-    );
-  }
-
-  if (f.type === "select") {
-    return (
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger id={f.key} className="h-9">
-          <SelectValue placeholder={`Select ${f.label.toLowerCase()}…`} />
-        </SelectTrigger>
-        <SelectContent>
-          {(f as SelectFieldDef).options.map((o) => (
-            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    );
-  }
-
-  if (f.type === "textarea") {
-    return (
-      <Textarea
-        id={f.key}
-        placeholder={(f as TextareaFieldDef).placeholder ?? `Enter ${f.label.toLowerCase()}…`}
-        rows={2}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="resize-none text-sm"
-      />
-    );
-  }
-
-  // text / email / tel / number / date / uuid
-  return (
-    <Input
-      id={f.key}
-      type={(f as ScalarFieldDef).type === "uuid" ? "text" : ((f as ScalarFieldDef).type ?? "text")}
-      placeholder={(f as ScalarFieldDef).placeholder ?? `Enter ${f.label.toLowerCase()}…`}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="h-9 text-sm"
-    />
-  );
-}
-
-/** Renders a single cell inside an items row */
-function RowCell({
-  col,
-  value,
-  onChange,
-}: {
-  col: ScalarFieldDef | SelectFieldDef | FetchSelectFieldDef;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  if (col.type === "fetchselect") {
-    const fc = col as FetchSelectFieldDef;
-    return (
-      <FetchCombobox
-        fetchUrl={fc.fetchUrl}
-        labelKey={fc.labelKey}
-        valueKey={fc.valueKey}
-        searchKeys={fc.searchKeys}
-        placeholder={fc.placeholder ?? col.label}
-        value={value}
-        onValueChange={onChange}
-        compact
-      />
-    );
-  }
-
-  if (col.type === "select") {
-    return (
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="h-7 text-xs">
-          <SelectValue placeholder={col.label} />
-        </SelectTrigger>
-        <SelectContent>
-          {(col as SelectFieldDef).options.map((o) => (
-            <SelectItem key={o.value} value={o.value} className="text-xs">
-              {o.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    );
-  }
-
-  return (
-    <Input
-      type={(col as ScalarFieldDef).type === "number" ? "number" : "text"}
-      placeholder={(col as ScalarFieldDef).placeholder ?? col.label}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="h-7 text-xs"
-    />
-  );
-}
-
-// ─── Main component ───────────────────────────────────────────────────────────
-
-export function CreateDialog({ open, onOpenChange, config, onCreated }: Props) {
-  const tenantId = useAppSelector((s) => s.auth.user?.tenantId ?? "");
-  const [values, setValues] = useState<Record<string, string>>({});
-  const [itemsMap, setItemsMap] = useState<Record<string, Record<string, string>[]>>({});
-  const [saving, setSaving] = useState(false);
-
-  const itemFields = config.fields.filter((f): f is ItemsFieldDef => f.type === "items");
-  const scalarFields = config.fields.filter(
-    (f): f is ScalarFieldDef | TextareaFieldDef | SelectFieldDef | FetchSelectFieldDef =>
-      f.type !== "items",
-  );
-
-  function reset() {
-    setValues({});
-    setItemsMap({});
-    setSaving(false);
-  }
-
-  function setVal(key: string, val: string) {
-    setValues((v) => ({ ...v, [key]: val }));
-  }
-
-  function getItems(
-    key: string,
-    columns: (ScalarFieldDef | SelectFieldDef | FetchSelectFieldDef)[],
-  ): Record<string, string>[] {
-    return itemsMap[key] ?? [emptyRow(columns)];
-  }
-
-  function addRow(key: string, columns: (ScalarFieldDef | SelectFieldDef | FetchSelectFieldDef)[]) {
-    setItemsMap((m) => ({
-      ...m,
-      [key]: [...(m[key] ?? [emptyRow(columns)]), emptyRow(columns)],
-    }));
-  }
-
-  function removeRow(key: string, idx: number) {
-    setItemsMap((m) => {
-      const rows = m[key] ?? [];
-      if (rows.length <= 1) return m;
-      return { ...m, [key]: rows.filter((_, i) => i !== idx) };
-    });
-  }
-
-  function setRowVal(key: string, idx: number, col: string, val: string) {
-    setItemsMap((m) => {
-      const rows = [...(m[key] ?? [])];
-      rows[idx] = { ...rows[idx], [col]: val };
-      return { ...m, [key]: rows };
-    });
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-
-    // Validate required scalar fields
-    for (const f of scalarFields) {
-      if (f.required && !values[f.key]?.trim()) {
-        toast.error(`${f.label} is required`);
-        return;
-      }
-    }
-
-    // Validate required item fields
-    for (const f of itemFields) {
-      const rows = getItems(f.key, f.columns);
-      if (f.required) {
-        const hasData = rows.some((r) => Object.values(r).some((v) => v.trim() !== ""));
-        if (!hasData) {
-          toast.error(`At least one ${f.label} row is required`);
-          return;
-        }
-      }
-    }
-
-    // Build body
-    const body: Record<string, unknown> = { tenantId };
-
-    for (const f of scalarFields) {
-      const val = values[f.key];
-      if (val === undefined || val === "") continue;
-      body[f.key] = (f as ScalarFieldDef).type === "number" ? Number(val) : val;
-    }
-
-    for (const f of itemFields) {
-      const rows = getItems(f.key, f.columns);
-      const coerced = rows
-        .filter((r) => Object.values(r).some((v) => v.trim() !== ""))
-        .map((r) => {
-          const obj: Record<string, unknown> = {};
-          for (const col of f.columns) {
-            const v = r[col.key];
-            const cast = castRowValue(v ?? "", (col as ScalarFieldDef).type);
-            if (cast !== undefined) obj[col.key] = cast;
-          }
-          return obj;
-        });
-      if (coerced.length > 0) body[f.key] = coerced;
-    }
-
-    if (config.extraBody) {
-      const firstItems =
-        itemFields.length > 0 ? getItems(itemFields[0].key, itemFields[0].columns) : [];
-      Object.assign(body, config.extraBody(values, firstItems));
-    }
-
-    setSaving(true);
+  async function loadOrders() {
+    setLoading(true);
     try {
-      const { data } = await api.post(config.postUrl, body);
-      const record = data?.data ?? data;
-      toast.success(`${config.title} created`);
-      onCreated(record);
-      reset();
-      onOpenChange(false);
-    } catch (err: any) {
-      const msg = err?.response?.data?.error ?? `Failed to create ${config.title}`;
-      toast.error(msg);
+      const params = new URLSearchParams();
+      if (priceFilter.min) params.set("minPrice", priceFilter.min);
+      if (priceFilter.max) params.set("maxPrice", priceFilter.max);
+      const { data } = await api.get(`/api/orders?${params.toString()}`);
+      setSearchParams(params, { replace: true });
+
+      let arr: unknown[] = [];
+      if (Array.isArray(data)) arr = data;
+      else if (Array.isArray(data?.data)) arr = data.data;
+      else if (Array.isArray(data?.items)) arr = data.items;
+      setOrders(arr as Order[]);
+    } catch {
+      toast.error("Failed to load orders");
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   }
 
-  return (
-    <Dialog
-      open={open}
-      onOpenChange={(v) => {
-        if (!saving) {
-          onOpenChange(v);
-          if (!v) reset();
+  useEffect(() => {
+    loadOrders();
+    document.title = "Orders · VMS";
+  }, [priceFilter.min, priceFilter.max]);
+
+  async function handleStatusChange(orderId: string, newStatus: OrderStatus) {
+    try {
+      await api.patch(`/api/orders/${orderId}`, { status: newStatus });
+      toast.success(`Order status updated to ${newStatus}`);
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      await loadOrders();
+    } catch {
+      toast.error("Failed to update order status");
+    }
+  }
+
+  async function handleExport() {
+    try {
+      const params = new URLSearchParams();
+      if (priceFilter.min) params.set("minPrice", priceFilter.min);
+      if (priceFilter.max) params.set("maxPrice", priceFilter.max);
+      const { data } = await api.get(
+        `/api/orders/export?${params.toString()}`,
+        { responseType: "blob" },
+      );
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `orders_${new Date().toISOString().split("T")[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success("Export started");
+    } catch {
+      toast.error("Failed to export orders");
+    }
+  }
+
+  async function handleSave(id: string | number, patch: Partial<Order>) {
+    await api.put(`/api/orders/${id}`, patch);
+  }
+
+  const columns: Column<Order>[] = [
+    {
+      key: "id",
+      label: "ID",
+      render: (v: any) => <UuidCell value={String(v)} />,
+    },
+    {
+      key: "externalOrderId",
+      label: "Order Ref",
+      render: (v: any) => v ? <UuidCell value={String(v)} /> : <span className="text-muted-foreground">—</span>,
+    },
+    {
+      key: "status",
+      label: "Status",
+      render: (val: any, row: Order) => {
+        const status = val as OrderStatus;
+        const nextStatuses = STATUS_TRANSITIONS[status] || [];
+        if (nextStatuses.length === 0) {
+          return (
+            <Badge variant={STATUS_VARIANTS[status]} className="text-xs font-medium">
+              {status}
+            </Badge>
+          );
         }
-      }}
-    >
-      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>New {config.title}</DialogTitle>
-        </DialogHeader>
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent">
+                <Badge
+                  variant={STATUS_VARIANTS[status]}
+                  className="text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity"
+                >
+                  {status}
+                </Badge>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {nextStatuses.map((nextStatus) => (
+                <DropdownMenuItem
+                  key={nextStatus}
+                  onClick={() => handleStatusChange(row.id, nextStatus)}
+                  className="cursor-pointer"
+                >
+                  <Badge variant={STATUS_VARIANTS[nextStatus]} className="text-xs font-medium mr-2">
+                    {nextStatus}
+                  </Badge>
+                  Change to {nextStatus}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+    {
+      key: "warehouse",
+      label: "Warehouse",
+      render: (v: any) => v?.name ?? "—",
+    },
+    {
+      key: "reservedAt",
+      label: "Reserved",
+      render: (v: any) => (v ? new Date(v).toLocaleDateString() : "—"),
+    },
+    {
+      key: "totalAmount",
+      label: "Amount",
+      type: "number",
+      filterable: true,
+      filterType: "number",
+      render: (v: number) => (v ? `$${v.toFixed(2)}` : "—"),
+    },
+  ];
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-0 min-h-0">
-          <div className="overflow-y-auto pr-1 space-y-3 py-1 flex-1">
+  const createConfig: CreateDialogConfig = {
+    title: "Order Reservation",
+    postUrl: "/api/orders",
+    fields: [
+      {
+        key: "warehouseId",
+        label: "Warehouse",
+        required: true,
+        type: "fetchselect",
+        fetchUrl: "/api/warehouses",
+        labelKey: "name",
+        searchKeys: ["code"],
+        placeholder: "Select warehouse…",
+      },
+      {
+        key: "items",
+        label: "Reserved Items",
+        type: "items",
+        required: true,
+        columns: [
+          {
+            key: "productId",
+            label: "Product",
+            type: "fetchselect",
+            fetchUrl: "/api/products",
+            labelKey: "name",
+            searchKeys: ["sku"],
+            placeholder: "Select product…",
+          },
+          { key: "qtyReserved", label: "Qty", type: "number", placeholder: "1" },
+        ],
+      },
+    ],
+    extraBody: () => ({ externalOrderId: crypto.randomUUID() }),
+  };
 
-            {/* ── Scalar / FetchSelect / Select / Textarea fields ── */}
-            {scalarFields.map((f) => (
-              <div key={f.key} className="space-y-1.5">
-                <Label htmlFor={f.key} className="text-sm">
-                  {f.label}
-                  {f.required && <span className="text-destructive ml-0.5">*</span>}
-                </Label>
-                <ScalarField
-                  f={f}
-                  value={values[f.key] ?? ""}
-                  onChange={(v) => setVal(f.key, v)}
-                />
-              </div>
-            ))}
-
-            {/* ── Items fields ── */}
-            {itemFields.map((f) => {
-              const rows = getItems(f.key, f.columns);
-              return (
-                <div key={f.key} className="space-y-2">
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-semibold">
-                      {f.label}
-                      {f.required && <span className="text-destructive ml-0.5">*</span>}
-                    </Label>
-                    <Button
-                      type="button"
-                      size="xs"
-                      variant="outline"
-                      onClick={() => addRow(f.key, f.columns)}
-                    >
-                      <Plus className="h-3 w-3 mr-1" /> Add row
-                    </Button>
-                  </div>
-
-                  <div className="space-y-2">
-                    {/* Column headers */}
-                    <div
-                      className="grid gap-1.5 text-xs font-medium text-muted-foreground"
-                      style={{
-                        gridTemplateColumns: `repeat(${f.columns.length}, 1fr) 24px`,
-                      }}
-                    >
-                      {f.columns.map((c) => (
-                        <span key={c.key}>{c.label}</span>
-                      ))}
-                      <span />
-                    </div>
-
-                    {rows.map((row, idx) => (
-                      <div
-                        key={idx}
-                        className="grid gap-1.5 items-center"
-                        style={{
-                          gridTemplateColumns: `repeat(${f.columns.length}, 1fr) 24px`,
-                        }}
-                      >
-                        {f.columns.map((col) => (
-                          <RowCell
-                            key={col.key}
-                            col={col}
-                            value={row[col.key] ?? ""}
-                            onChange={(v) => setRowVal(f.key, idx, col.key, v)}
-                          />
-                        ))}
-                        <Button
-                          type="button"
-                          size="icon-xs"
-                          variant="ghost-destructive"
-                          onClick={() => removeRow(f.key, idx)}
-                          disabled={rows.length === 1}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+  return (
+    <>
+      <PageHeader
+        title="Orders"
+        description="Order reservations"
+        action={
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={handleExport}>
+              <Download className="h-4 w-4" /> Export
+            </Button>
+            <Button onClick={() => setCreateOpen(true)} size="sm" className="gap-1.5">
+              <Plus className="h-4 w-4" /> New
+            </Button>
           </div>
+        }
+      />
 
-          <DialogFooter className="pt-3 gap-2 shrink-0 border-t mt-3">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={saving}
-              onClick={() => {
-                onOpenChange(false);
-                reset();
-              }}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" size="sm" disabled={saving}>
-              {saving ? "Creating…" : `Create ${config.title}`}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+      {/* Price filter bar */}
+      <div className="flex flex-wrap gap-2 items-center mb-4 p-3 rounded-lg border border-border bg-muted/30">
+        <Label className="text-sm shrink-0 text-muted-foreground">Filter by amount:</Label>
+        <div className="flex items-center gap-2">
+          <Input
+            type="number"
+            placeholder="Min"
+            value={priceFilter.min}
+            onChange={(e) => setPriceFilter((p) => ({ ...p, min: e.target.value }))}
+            className="h-8 w-24 text-sm"
+          />
+          <span className="text-muted-foreground text-sm">—</span>
+          <Input
+            type="number"
+            placeholder="Max"
+            value={priceFilter.max}
+            onChange={(e) => setPriceFilter((p) => ({ ...p, max: e.target.value }))}
+            className="h-8 w-24 text-sm"
+          />
+        </div>
+        {hasFilter && (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 gap-1 text-muted-foreground"
+            onClick={() => setPriceFilter({ min: "", max: "" })}
+          >
+            <X className="h-3.5 w-3.5" /> Clear filter
+          </Button>
+        )}
+        {hasFilter && (
+          <span className="text-xs text-muted-foreground ml-auto">
+            Showing filtered results
+          </span>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="rounded-xl border border-dashed border-border bg-card p-12 text-center">
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        </div>
+      ) : (
+        <EditableTable
+          rows={orders}
+          columns={columns}
+          onSave={handleSave}
+          empty="No orders found"
+        />
+      )}
+
+      <CreateDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        config={createConfig}
+        onCreated={() => {
+          setCreateOpen(false);
+          loadOrders();
+        }}
+      />
+    </>
   );
 }

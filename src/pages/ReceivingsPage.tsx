@@ -10,6 +10,7 @@ export default function ReceivingsPage() {
       title="Receivings"
       description="Goods receiving documents"
       path="/api/receivings"
+      exportUrl="/api/receivings/export"
       deletable={false}
       columns={[
         { key: "receivingNumber", label: "Number" },

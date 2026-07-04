@@ -10,6 +10,7 @@ export default function PurchaseOrdersPage() {
       title="Purchase Orders"
       description="Procurement purchase orders"
       path="/api/purchase-orders"
+      exportUrl="/api/purchase-orders/export"
       deletable={false}
       columns={[
         { key: "poNumber", label: "PO Number" },

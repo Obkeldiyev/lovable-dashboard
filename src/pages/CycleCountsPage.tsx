@@ -1,4 +1,5 @@
 import { GenericPage } from "@/components/data/GenericPage";
+import { UuidCell } from "@/components/ui/uuid-cell";
 
 // Backend: createCycleCount({
 //   tenantId*, warehouseId* (used as outbox key),
@@ -13,7 +14,11 @@ export default function CycleCountsPage() {
       path="/api/cycle-counts"
       deletable={false}
       columns={[
-        { key: "id", label: "ID", render: (v: any) => String(v).slice(0, 8) },
+        {
+          key: "id",
+          label: "ID",
+          render: (v: any) => <UuidCell value={String(v)} />,
+        },
         {
           key: "payload",
           label: "Warehouse",
