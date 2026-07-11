@@ -3,12 +3,15 @@ import { useAppSelector } from "@/store";
 
 // Maps frontend role aliases to backend role values
 const ROLE_ALIASES: Record<string, string[]> = {
-  driver: ["WAREHOUSE_STAFF", "AGENT"],
-  admin: ["SUPER_ADMIN", "DIRECTOR", "MANAGER"],
+  driver: ["WAREHOUSE_STAFF", "AGENT", "DRIVER"],
+  admin: ["SUPER_ADMIN", "DIRECTOR", "MANAGER", "ADMIN"],
   manager: ["SUPER_ADMIN", "DIRECTOR", "MANAGER"],
   superadmin: ["SUPER_ADMIN"],
   accountant: ["ACCOUNTANT", "SUPER_ADMIN", "DIRECTOR"],
   support: ["SUPPORT", "SUPER_ADMIN"],
+  agent: ["AGENT"],
+  supervisor: ["SUPERVISOR", "SUPER_ADMIN"],
+  brand: ["BRAND"],
 };
 
 export default function RoleRoute({ allow }: { allow: string[] }) {

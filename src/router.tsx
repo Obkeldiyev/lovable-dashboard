@@ -34,6 +34,15 @@ const ReportsPage = lazy(() => import("@/pages/ReportsPage"));
 const ShopPricingPage = lazy(() => import("@/pages/ShopPricingPage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
+// New role-based pages
+const AgentReportsPage = lazy(() => import("@/pages/AgentReportsPage"));
+const AgentBiddingPage = lazy(() => import("@/pages/AgentBiddingPage"));
+const AgentVisitPlansPage = lazy(() => import("@/pages/AgentVisitPlansPage"));
+const SupervisorDashboardPage = lazy(() => import("@/pages/SupervisorDashboardPage"));
+const DriverDeliveriesPage = lazy(() => import("@/pages/DriverDeliveriesPage"));
+const BrandProductsPage = lazy(() => import("@/pages/BrandProductsPage"));
+const ManagerPaymentsPage = lazy(() => import("@/pages/ManagerPaymentsPage"));
+
 export function AppRouter() {
   return (
     <BrowserRouter>
@@ -72,6 +81,29 @@ export function AppRouter() {
               <Route path="/agent" element={<AgentPage />} />
               <Route path="/agent/pricing" element={<ShopPricingPage />} />
               <Route path="/reports" element={<ReportsPage />} />
+
+              {/* New role-based routes */}
+              <Route element={<RoleRoute allow={["agent"]} />}>
+                <Route path="/agent/reports" element={<AgentReportsPage />} />
+                <Route path="/agent/bids" element={<AgentBiddingPage />} />
+                <Route path="/agent/visits" element={<AgentVisitPlansPage />} />
+              </Route>
+
+              <Route element={<RoleRoute allow={["supervisor"]} />}>
+                <Route path="/supervisor/dashboard" element={<SupervisorDashboardPage />} />
+              </Route>
+
+              <Route element={<RoleRoute allow={["driver"]} />}>
+                <Route path="/driver/deliveries" element={<DriverDeliveriesPage />} />
+              </Route>
+
+              <Route element={<RoleRoute allow={["brand"]} />}>
+                <Route path="/brand/products" element={<BrandProductsPage />} />
+              </Route>
+
+              <Route element={<RoleRoute allow={["manager"]} />}>
+                <Route path="/manager/payments" element={<ManagerPaymentsPage />} />
+              </Route>
             </Route>
           </Route>
           <Route path="*" element={<NotFound />} />
@@ -80,3 +112,4 @@ export function AppRouter() {
     </BrowserRouter>
   );
 }
+
