@@ -35,7 +35,7 @@ type Product = {
   id: string;
   sku: string;
   name: string;
-  defaultPrice?: number;
+  defaultPrice?: number | string;
   unit?: string;
 };
 type PriceLine = {
@@ -106,12 +106,13 @@ export default function ShopPricingPage() {
     const shopOverrides = prices[shopId] ?? {};
     const built: PriceLine[] = products.map((pr) => {
       const override = shopOverrides[pr.id];
+      const parsedDefaultPrice = Number(pr.defaultPrice) || 0;
       return {
         productId: pr.id,
         productName: pr.name,
         productSku: pr.sku,
         unit: pr.unit ?? "pcs",
-        defaultPrice: pr.defaultPrice ?? 0,
+        defaultPrice: parsedDefaultPrice,
         customPrice: override ? String(override.price) : "",
         note: override?.note ?? "",
       };
@@ -346,6 +347,7 @@ export default function ShopPricingPage() {
                   <tbody className="divide-y divide-border">
                     {filtered.map((line) => {
                       const hasOverride = line.customPrice.trim() !== "";
+                      const defaultPriceNum = Number(line.defaultPrice) || 0;
                       return (
                         <tr
                           key={line.productId}
@@ -376,8 +378,8 @@ export default function ShopPricingPage() {
                             {line.unit}
                           </td>
                           <td className="px-3 py-2 text-sm font-mono">
-                            {line.defaultPrice > 0
-                              ? line.defaultPrice.toFixed(2)
+                            {defaultPriceNum > 0
+                              ? defaultPriceNum.toFixed(2)
                               : "—"}
                           </td>
                           <td className="px-3 py-2">
@@ -394,8 +396,8 @@ export default function ShopPricingPage() {
                                 )
                               }
                               placeholder={
-                                line.defaultPrice > 0
-                                  ? String(line.defaultPrice)
+                                defaultPriceNum > 0
+                                  ? String(defaultPriceNum)
                                   : "0.00"
                               }
                               className={cn(

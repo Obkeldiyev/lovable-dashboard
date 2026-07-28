@@ -17,7 +17,11 @@ import { useAppSelector } from "@/store";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +29,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { FetchCombobox } from "@/components/ui/fetch-combobox";
 import { Plus, Trash2 } from "lucide-react";
@@ -127,7 +135,10 @@ export type CreateDialogConfig = {
   postUrl: string;
   fields: FieldDef[];
   /** Extra computed fields merged into the body after form values are collected */
-  extraBody?: (values: Record<string, string>, items: Record<string, string>[]) => Record<string, unknown>;
+  extraBody?: (
+    values: Record<string, string>,
+    items: Record<string, string>[],
+  ) => Record<string, unknown>;
 };
 
 type Props = {
@@ -139,7 +150,9 @@ type Props = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function emptyRow(columns: (ScalarFieldDef | SelectFieldDef | FetchSelectFieldDef)[]): Record<string, string> {
+function emptyRow(
+  columns: (ScalarFieldDef | SelectFieldDef | FetchSelectFieldDef)[],
+): Record<string, string> {
   return Object.fromEntries(columns.map((c) => [c.key, ""]));
 }
 
@@ -157,7 +170,12 @@ function ScalarField({
   onChange,
   values,
 }: {
-  f: ScalarFieldDef | TextareaFieldDef | SelectFieldDef | FetchSelectFieldDef | DependentFetchSelectFieldDef;
+  f:
+    | ScalarFieldDef
+    | TextareaFieldDef
+    | SelectFieldDef
+    | FetchSelectFieldDef
+    | DependentFetchSelectFieldDef;
   value: string;
   onChange: (v: string) => void;
   /** Full form values — needed by dependentfetchselect to read its parent field */
@@ -172,7 +190,10 @@ function ScalarField({
         labelKey={ff.labelKey}
         valueKey={ff.valueKey}
         searchKeys={ff.searchKeys}
-        placeholder={ff.placeholder ?? t("createDialog.selectPlaceholder",{label: ff.label.toLowerCase()})}
+        placeholder={
+          ff.placeholder ??
+          t("createDialog.selectPlaceholder", { label: ff.label.toLowerCase() })
+        }
         value={value}
         onValueChange={onChange}
       />
@@ -220,7 +241,9 @@ function ScalarField({
         </SelectTrigger>
         <SelectContent>
           {(f as SelectFieldDef).options.map((o) => (
-            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -231,7 +254,10 @@ function ScalarField({
     return (
       <Textarea
         id={f.key}
-        placeholder={(f as TextareaFieldDef).placeholder ?? t("createDialog.inputPlaceholder", {label: f.label.toLowerCase()})}
+        placeholder={
+          (f as TextareaFieldDef).placeholder ??
+          t("createDialog.inputPlaceholder", { label: f.label.toLowerCase() })
+        }
         rows={2}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -244,8 +270,15 @@ function ScalarField({
   return (
     <Input
       id={f.key}
-      type={(f as ScalarFieldDef).type === "uuid" ? "text" : ((f as ScalarFieldDef).type ?? "text")}
-      placeholder={(f as ScalarFieldDef).placeholder ?? t("createDialog.inputPlaceholder", {label: f.label.toLowerCase()})}
+      type={
+        (f as ScalarFieldDef).type === "uuid"
+          ? "text"
+          : ((f as ScalarFieldDef).type ?? "text")
+      }
+      placeholder={
+        (f as ScalarFieldDef).placeholder ??
+        t("createDialog.inputPlaceholder", { label: f.label.toLowerCase() })
+      }
       value={value}
       onChange={(e) => onChange(e.target.value)}
       className="h-9 text-sm"
@@ -312,14 +345,24 @@ function RowCell({
 export function CreateDialog({ open, onOpenChange, config, onCreated }: Props) {
   const tenantId = useAppSelector((s) => s.auth.user?.tenantId ?? "");
   const [values, setValues] = useState<Record<string, string>>({});
-  const [itemsMap, setItemsMap] = useState<Record<string, Record<string, string>[]>>({});
+  const [itemsMap, setItemsMap] = useState<
+    Record<string, Record<string, string>[]>
+  >({});
   const [saving, setSaving] = useState(false);
   const { t } = useTranslation();
 
-  const itemFields = config.fields.filter((f): f is ItemsFieldDef => f.type === "items");
+  const itemFields = config.fields.filter(
+    (f): f is ItemsFieldDef => f.type === "items",
+  );
   const scalarFields = config.fields.filter(
-    (f): f is ScalarFieldDef | TextareaFieldDef | SelectFieldDef | FetchSelectFieldDef | DependentFetchSelectFieldDef =>
-      f.type !== "items",
+    (
+      f,
+    ): f is
+      | ScalarFieldDef
+      | TextareaFieldDef
+      | SelectFieldDef
+      | FetchSelectFieldDef
+      | DependentFetchSelectFieldDef => f.type !== "items",
   );
   // Fields that depend on another field's value — used to clear them when their parent changes.
   const dependentFields = scalarFields.filter(
@@ -351,7 +394,10 @@ export function CreateDialog({ open, onOpenChange, config, onCreated }: Props) {
     return itemsMap[key] ?? [emptyRow(columns)];
   }
 
-  function addRow(key: string, columns: (ScalarFieldDef | SelectFieldDef | FetchSelectFieldDef)[]) {
+  function addRow(
+    key: string,
+    columns: (ScalarFieldDef | SelectFieldDef | FetchSelectFieldDef)[],
+  ) {
     setItemsMap((m) => ({
       ...m,
       [key]: [...(m[key] ?? [emptyRow(columns)]), emptyRow(columns)],
@@ -380,7 +426,7 @@ export function CreateDialog({ open, onOpenChange, config, onCreated }: Props) {
     // Validate required scalar fields
     for (const f of scalarFields) {
       if (f.required && !values[f.key]?.trim()) {
-        toast.error(t("createDialog.requiredField",{label: f.label}));
+        toast.error(t("createDialog.requiredField", { label: f.label }));
         return;
       }
     }
@@ -389,9 +435,11 @@ export function CreateDialog({ open, onOpenChange, config, onCreated }: Props) {
     for (const f of itemFields) {
       const rows = getItems(f.key, f.columns);
       if (f.required) {
-        const hasData = rows.some((r) => Object.values(r).some((v) => v.trim() !== ""));
+        const hasData = rows.some((r) =>
+          Object.values(r).some((v) => v.trim() !== ""),
+        );
         if (!hasData) {
-          toast.error(t("createDialog.requiredRow",{label: f.label}));
+          toast.error(t("createDialog.requiredRow", { label: f.label }));
           return;
         }
       }
@@ -424,7 +472,9 @@ export function CreateDialog({ open, onOpenChange, config, onCreated }: Props) {
 
     if (config.extraBody) {
       const firstItems =
-        itemFields.length > 0 ? getItems(itemFields[0].key, itemFields[0].columns) : [];
+        itemFields.length > 0
+          ? getItems(itemFields[0].key, itemFields[0].columns)
+          : [];
       Object.assign(body, config.extraBody(values, firstItems));
     }
 
@@ -437,7 +487,9 @@ export function CreateDialog({ open, onOpenChange, config, onCreated }: Props) {
       reset();
       onOpenChange(false);
     } catch (err: any) {
-      const msg = err?.response?.data?.error ?? t("createDialog.createFailed", { title: config.title });
+      const msg =
+        err?.response?.data?.error ??
+        t("createDialog.createFailed", { title: config.title });
       toast.error(msg);
     } finally {
       setSaving(false);
@@ -456,18 +508,21 @@ export function CreateDialog({ open, onOpenChange, config, onCreated }: Props) {
     >
       <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>{t("createdDialog.newRecord",{label: config.title})}</DialogTitle>
+          <DialogTitle>
+            {t("createdDialog.newRecord", { label: config.title })}
+          </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-0 min-h-0">
           <div className="overflow-y-auto pr-1 space-y-3 py-1 flex-1">
-
             {/* ── Scalar / FetchSelect / Select / Textarea fields ── */}
             {scalarFields.map((f) => (
               <div key={f.key} className="space-y-1.5">
                 <Label htmlFor={f.key} className="text-sm">
                   {f.label}
-                  {f.required && <span className="text-destructive ml-0.5">*</span>}
+                  {f.required && (
+                    <span className="text-destructive ml-0.5">*</span>
+                  )}
                 </Label>
                 <ScalarField
                   f={f}
@@ -487,7 +542,9 @@ export function CreateDialog({ open, onOpenChange, config, onCreated }: Props) {
                   <div className="flex items-center justify-between">
                     <Label className="text-sm font-semibold">
                       {f.label}
-                      {f.required && <span className="text-destructive ml-0.5">*</span>}
+                      {f.required && (
+                        <span className="text-destructive ml-0.5">*</span>
+                      )}
                     </Label>
                     <Button
                       type="button"
@@ -495,7 +552,8 @@ export function CreateDialog({ open, onOpenChange, config, onCreated }: Props) {
                       variant="outline"
                       onClick={() => addRow(f.key, f.columns)}
                     >
-                      <Plus className="h-3 w-3 mr-1" /> {t("createDialog.addRow")}
+                      <Plus className="h-3 w-3 mr-1" />{" "}
+                      {t("createDialog.addRow")}
                     </Button>
                   </div>
 
@@ -560,7 +618,9 @@ export function CreateDialog({ open, onOpenChange, config, onCreated }: Props) {
               {t("createDialog.cancel")}
             </Button>
             <Button type="submit" size="sm" disabled={saving}>
-              {saving ? t("createDialog.creating") : t("createDialog.create", { label: config.title })}
+              {saving
+                ? t("createDialog.creating")
+                : t("createDialog.create", { label: config.title })}
             </Button>
           </DialogFooter>
         </form>
