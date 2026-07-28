@@ -560,7 +560,7 @@ export function CreateDialog({ open, onOpenChange, config, onCreated }: Props) {
               {t("createDialog.cancel")}
             </Button>
             <Button type="submit" size="sm" disabled={saving}>
-              {saving ? t("createDialog.creating") : `Create ${config.title}`}
+              {saving ? t("createDialog.creating") : t("createDialog.create", { label: config.title })}
             </Button>
           </DialogFooter>
         </form>
