@@ -250,6 +250,12 @@ const resources = {
           loadFailed: "Failed to load visit plans",
         },
       },
+      appearancePage: {
+        title: "Appearance",
+        description:
+          "Appearance settings have moved to the main Settings page.",
+        goToSettings: "Go to Settings",
+      },
     },
   },
   ru: {

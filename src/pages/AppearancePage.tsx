@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
@@ -8,15 +9,20 @@ import { ArrowLeft } from "lucide-react";
  * Kept as a route for backward compatibility with any bookmarks.
  */
 export default function AppearancePage() {
-  useEffect(() => { document.title = "Appearance · VMS"; }, []);
+  const { t } = useTranslation();
+
+  useEffect(() => {
+    document.title = `${t("appearancePage.title")} · VMS`;
+  }, [t]);
+
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
       <p className="text-sm text-muted-foreground">
-        Appearance settings have moved to the main Settings page.
+        {t("appearancePage.description")}
       </p>
       <Button asChild className="gap-2">
         <Link to="/settings?tab=appearance">
-          <ArrowLeft className="h-4 w-4" /> Go to Settings
+          <ArrowLeft className="h-4 w-4" /> {t("appearancePage.goToSettings")}
         </Link>
       </Button>
     </div>
