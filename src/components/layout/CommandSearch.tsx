@@ -1,14 +1,6 @@
-/**
- * CommandSearch — global Cmd+K / Ctrl+K command palette.
- *
- * Searches across warehouses, products, orders, and suppliers and
- * navigates to the matching entity's page on selection.
- *
- * Usage: mount once, near the root of the authenticated layout
- * (e.g. inside AppHeader). It listens for Cmd+K / Ctrl+K globally.
- */
 import { useEffect, useState, useCallback, type ComponentType } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next"; // 1. Import qo'shildi
 import {
   CommandDialog,
   CommandEmpty,
@@ -20,8 +12,6 @@ import {
 import { Boxes, Package, ShoppingCart, Truck } from "lucide-react";
 import { api } from "@/lib/api";
 
-// ─── Entity config ───────────────────────────────────────────────────────────
-
 type ResultItem = {
   id: string;
   label: string;
@@ -30,7 +20,7 @@ type ResultItem = {
 
 type EntityConfig = {
   key: string;
-  groupLabel: string;
+  groupKey: string; // groupLabel o'rniga groupKey
   icon: ComponentType<{ className?: string }>;
   fetchUrl: string;
   path: string;
@@ -40,7 +30,7 @@ type EntityConfig = {
 const ENTITIES: EntityConfig[] = [
   {
     key: "warehouses",
-    groupLabel: "Warehouses",
+    groupKey: "commandSearch.groups.warehouses",
     icon: Boxes,
     fetchUrl: "/api/warehouses",
     path: "/warehouses",
@@ -52,7 +42,7 @@ const ENTITIES: EntityConfig[] = [
   },
   {
     key: "products",
-    groupLabel: "Products",
+    groupKey: "commandSearch.groups.products",
     icon: Package,
     fetchUrl: "/api/products",
     path: "/products",
@@ -64,7 +54,7 @@ const ENTITIES: EntityConfig[] = [
   },
   {
     key: "orders",
-    groupLabel: "Orders",
+    groupKey: "commandSearch.groups.orders",
     icon: ShoppingCart,
     fetchUrl: "/api/orders",
     path: "/orders",
@@ -76,7 +66,7 @@ const ENTITIES: EntityConfig[] = [
   },
   {
     key: "suppliers",
-    groupLabel: "Suppliers",
+    groupKey: "commandSearch.groups.suppliers",
     icon: Truck,
     fetchUrl: "/api/suppliers",
     path: "/suppliers",
@@ -102,20 +92,16 @@ function extractArray(data: unknown): unknown[] {
   return [];
 }
 
-// Module-level cache — one request per entity per page load, shared by
-// every CommandSearch instance (there should only ever be one mounted).
 const resultsCache = new Map<string, ResultItem[]>();
-
-// ─── Component ────────────────────────────────────────────────────────────────
 
 export function CommandSearch({
   open: openProp,
   onOpenChange,
 }: {
-  /** Pass to control the dialog externally (e.g. clicking the header search box) */
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
 } = {}) {
+  const { t } = useTranslation(); // 2. Hook chaqirildi
   const [openState, setOpenState] = useState(false);
   const open = openProp ?? openState;
   const setOpen = onOpenChange ?? setOpenState;
@@ -123,7 +109,6 @@ export function CommandSearch({
   const [resultsByEntity, setResultsByEntity] = useState<Record<string, ResultItem[]>>({});
   const navigate = useNavigate();
 
-  // Cmd+K / Ctrl+K toggles the palette from anywhere in the app.
   useEffect(() => {
     function handler(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -169,19 +154,22 @@ export function CommandSearch({
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Search warehouses, products, orders, suppliers…" />
+      {/* 3. Dinamik matnlar joylashtirildi */}
+      <CommandInput placeholder={t("commandSearch.placeholder")} />
       <CommandList>
         {loading && (
-          <div className="py-6 text-center text-sm text-muted-foreground">Loading…</div>
+          <div className="py-6 text-center text-sm text-muted-foreground">
+            {t("commandSearch.loading")}
+          </div>
         )}
-        {!loading && <CommandEmpty>No results found.</CommandEmpty>}
+        {!loading && <CommandEmpty>{t("commandSearch.noResults")}</CommandEmpty>}
         {!loading &&
           ENTITIES.map((entity) => {
             const results = resultsByEntity[entity.key] ?? [];
             if (results.length === 0) return null;
             const Icon = entity.icon;
             return (
-              <CommandGroup key={entity.key} heading={entity.groupLabel}>
+              <CommandGroup key={entity.key} heading={t(entity.groupKey)}>
                 {results.slice(0, 8).map((item) => (
                   <CommandItem
                     key={item.id}

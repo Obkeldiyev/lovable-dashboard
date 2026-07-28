@@ -171,6 +171,17 @@ const resources = {
         createdSuccess: "{{title}} created",
         createFailed: "Failed to create {{title}}",
       },
+      commandSearch: {
+        placeholder: "Search warehouses, products, orders, suppliers…",
+        loading: "Loading…",
+        noResults: "No results found.",
+        groups: {
+          warehouses: "Warehouses",
+          products: "Products",
+          orders: "Orders",
+          suppliers: "Suppliers",
+        },
+      },
     },
   },
   ru: {
