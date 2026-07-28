@@ -7,11 +7,20 @@ import { api } from "@/lib/api";
 import { useAppSelector } from "@/store";
 import { toast } from "sonner";
 import {
-  RefreshCw, Boxes, PackageCheck, Package, Wifi, WifiOff,
-  AlertTriangle, CheckCircle2, Clock, Server,
+  RefreshCw,
+  Boxes,
+  PackageCheck,
+  Package,
+  Wifi,
+  WifiOff,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  Server,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UuidCell } from "@/components/ui/uuid-cell";
+import { useTranslation } from "react-i18next";
 
 type Task = {
   id: string;
@@ -39,22 +48,28 @@ type OpsMetrics = {
 };
 
 const STATUS_COLOR: Record<string, string> = {
-  CREATED:     "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  IN_PROGRESS: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
-  PICKED:      "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-  PACKED:      "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-  SHORT:       "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-  CANCELLED:   "bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400",
+  CREATED: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+  IN_PROGRESS:
+    "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+  PICKED:
+    "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+  PACKED:
+    "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+  SHORT: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+  CANCELLED: "bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400",
 };
 
 export default function OpsPage() {
+  const { t } = useTranslation();
   const tenantId = useAppSelector((s) => s.auth.user?.tenantId);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [metrics, setMetrics] = useState<OpsMetrics | null>(null);
   const [services, setServices] = useState<ServiceStatus[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { document.title = "Operations · VMS"; }, []);
+  useEffect(() => {
+    document.title = `${t("ops.title")} · VMS`;
+  }, [t]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -83,13 +98,15 @@ export default function OpsPage() {
         setServices(list);
       }
     } catch {
-      toast.error("Failed to load operations data");
+      toast.error(t("ops.toast.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [tenantId]);
+  }, [tenantId, t]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const pickTasks = tasks.filter((t) => t.type === "PICK");
   const packTasks = tasks.filter((t) => t.type === "PACK");
@@ -98,14 +115,16 @@ export default function OpsPage() {
     <div className="space-y-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">Operations</h2>
+          <h2 className="text-xl font-semibold tracking-tight">
+            {t("ops.title")}
+          </h2>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Pick &amp; pack tasks, warehouse metrics, and service health.
+            {t("ops.subtitle")}
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={load} className="gap-1.5">
           <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
-          Refresh
+          {t("ops.refresh")}
         </Button>
       </div>
 
@@ -113,18 +132,45 @@ export default function OpsPage() {
       {metrics && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
-            { label: "Warehouses",   value: metrics.warehouseCount,  icon: <Boxes className="h-4 w-4" /> },
-            { label: "Pick Tasks",   value: metrics.pickTaskCount,   icon: <PackageCheck className="h-4 w-4" />, color: metrics.pickTaskCount > 0 ? "text-amber-600" : "" },
-            { label: "Pack Tasks",   value: metrics.packTaskCount,   icon: <Package className="h-4 w-4" />, color: metrics.packTaskCount > 0 ? "text-amber-600" : "" },
-            { label: "Reservations", value: metrics.reservationCount,icon: <CheckCircle2 className="h-4 w-4" /> },
-            { label: "Low Stock",    value: metrics.lowStockCount,   icon: <AlertTriangle className="h-4 w-4" />, color: metrics.lowStockCount > 0 ? "text-destructive" : "" },
+            {
+              label: t("ops.metrics.warehouses"),
+              value: metrics.warehouseCount,
+              icon: <Boxes className="h-4 w-4" />,
+            },
+            {
+              label: t("ops.metrics.pickTasks"),
+              value: metrics.pickTaskCount,
+              icon: <PackageCheck className="h-4 w-4" />,
+              color: metrics.pickTaskCount > 0 ? "text-amber-600" : "",
+            },
+            {
+              label: t("ops.metrics.packTasks"),
+              value: metrics.packTaskCount,
+              icon: <Package className="h-4 w-4" />,
+              color: metrics.packTaskCount > 0 ? "text-amber-600" : "",
+            },
+            {
+              label: t("ops.metrics.reservations"),
+              value: metrics.reservationCount,
+              icon: <CheckCircle2 className="h-4 w-4" />,
+            },
+            {
+              label: t("ops.metrics.lowStock"),
+              value: metrics.lowStockCount,
+              icon: <AlertTriangle className="h-4 w-4" />,
+              color: metrics.lowStockCount > 0 ? "text-destructive" : "",
+            },
           ].map((m) => (
             <Card key={m.label} className="p-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">{m.label}</span>
-                <span className={cn("text-muted-foreground", m.color)}>{m.icon}</span>
+                <span className={cn("text-muted-foreground", m.color)}>
+                  {m.icon}
+                </span>
               </div>
-              <div className={cn("text-2xl font-bold mt-1", m.color)}>{m.value}</div>
+              <div className={cn("text-2xl font-bold mt-1", m.color)}>
+                {m.value}
+              </div>
             </Card>
           ))}
         </div>
@@ -135,7 +181,7 @@ export default function OpsPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Server className="h-4 w-4" /> Service Health
+              <Server className="h-4 w-4" /> {t("ops.serviceHealth")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -145,20 +191,32 @@ export default function OpsPage() {
                   key={s.service}
                   className={cn(
                     "flex items-center gap-3 rounded-lg border p-3",
-                    s.reachable ? "border-green-200 bg-green-50 dark:border-green-900/40 dark:bg-green-900/10"
-                                : "border-destructive/30 bg-destructive/5",
+                    s.reachable
+                      ? "border-green-200 bg-green-50 dark:border-green-900/40 dark:bg-green-900/10"
+                      : "border-destructive/30 bg-destructive/5",
                   )}
                 >
-                  {s.reachable
-                    ? <Wifi className="h-4 w-4 text-green-600 shrink-0" />
-                    : <WifiOff className="h-4 w-4 text-destructive shrink-0" />}
+                  {s.reachable ? (
+                    <Wifi className="h-4 w-4 text-green-600 shrink-0" />
+                  ) : (
+                    <WifiOff className="h-4 w-4 text-destructive shrink-0" />
+                  )}
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{s.service}</p>
-                    <p className={cn("text-xs", s.reachable ? "text-green-600" : "text-destructive")}>
-                      {s.reachable ? (s.status ?? "online") : "offline"}
+                    <p
+                      className={cn(
+                        "text-xs",
+                        s.reachable ? "text-green-600" : "text-destructive",
+                      )}
+                    >
+                      {s.reachable
+                        ? (s.status ?? t("ops.statusOnline"))
+                        : t("ops.statusOffline")}
                     </p>
                     {s.routeProvider && (
-                      <p className="text-[10px] text-muted-foreground">Route: {s.routeProvider}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {t("ops.route")}: {s.routeProvider}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -173,16 +231,20 @@ export default function OpsPage() {
         <TabsList>
           <TabsTrigger value="pick" className="gap-1.5">
             <PackageCheck className="h-3.5 w-3.5" />
-            Pick Tasks
+            {t("ops.tabs.pickTasks")}
             {pickTasks.length > 0 && (
-              <Badge variant="secondary" className="ml-1 text-xs">{pickTasks.length}</Badge>
+              <Badge variant="secondary" className="ml-1 text-xs">
+                {pickTasks.length}
+              </Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="pack" className="gap-1.5">
             <Package className="h-3.5 w-3.5" />
-            Pack Tasks
+            {t("ops.tabs.packTasks")}
             {packTasks.length > 0 && (
-              <Badge variant="secondary" className="ml-1 text-xs">{packTasks.length}</Badge>
+              <Badge variant="secondary" className="ml-1 text-xs">
+                {packTasks.length}
+              </Badge>
             )}
           </TabsTrigger>
         </TabsList>
@@ -196,40 +258,82 @@ export default function OpsPage() {
                   {loading ? (
                     <div className="space-y-2 p-4">
                       {[...Array(3)].map((_, i) => (
-                        <div key={i} className="h-12 rounded-lg bg-muted/40 animate-pulse" />
+                        <div
+                          key={i}
+                          className="h-12 rounded-lg bg-muted/40 animate-pulse"
+                        />
                       ))}
                     </div>
                   ) : list.length === 0 ? (
                     <div className="py-12 text-center text-sm text-muted-foreground">
-                      No {type} tasks
+                      {t("ops.table.noTasks", { type })}
                     </div>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b border-border bg-muted/30">
-                            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">ID</th>
-                            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status</th>
-                            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Warehouse</th>
-                            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Assignee</th>
-                            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Created</th>
+                            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              {t("ops.table.id")}
+                            </th>
+                            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              {t("ops.table.status")}
+                            </th>
+                            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              {t("ops.table.warehouse")}
+                            </th>
+                            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              {t("ops.table.assignee")}
+                            </th>
+                            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              {t("ops.table.created")}
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
-                          {list.map((t) => (
-                            <tr key={t.id} className="hover:bg-accent/30 transition-colors">
-                              <td className="px-4 py-2.5"><UuidCell value={t.id} /></td>
+                          {list.map((tItem) => (
+                            <tr
+                              key={tItem.id}
+                              className="hover:bg-accent/30 transition-colors"
+                            >
                               <td className="px-4 py-2.5">
-                                <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium", STATUS_COLOR[t.status] ?? "bg-muted text-muted-foreground")}>
-                                  {t.status}
+                                <UuidCell value={tItem.id} />
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <span
+                                  className={cn(
+                                    "text-[10px] px-2 py-0.5 rounded-full font-medium",
+                                    STATUS_COLOR[tItem.status] ??
+                                      "bg-muted text-muted-foreground",
+                                  )}
+                                >
+                                  {tItem.status}
                                 </span>
                               </td>
-                              <td className="px-4 py-2.5">{t.warehouseId ? <UuidCell value={t.warehouseId} /> : <span className="text-xs text-muted-foreground">—</span>}</td>
-                              <td className="px-4 py-2.5">{t.assignedUserId ? <UuidCell value={t.assignedUserId} /> : <span className="text-xs text-muted-foreground">Unassigned</span>}</td>
+                              <td className="px-4 py-2.5">
+                                {tItem.warehouseId ? (
+                                  <UuidCell value={tItem.warehouseId} />
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">
+                                    —
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-4 py-2.5">
+                                {tItem.assignedUserId ? (
+                                  <UuidCell value={tItem.assignedUserId} />
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">
+                                    {t("ops.table.unassigned")}
+                                  </span>
+                                )}
+                              </td>
                               <td className="px-4 py-2.5 text-xs text-muted-foreground">
                                 <span className="flex items-center gap-1">
                                   <Clock className="h-3 w-3" />
-                                  {new Date(t.createdAt).toLocaleDateString()}
+                                  {new Date(
+                                    tItem.createdAt,
+                                  ).toLocaleDateString()}
                                 </span>
                               </td>
                             </tr>
