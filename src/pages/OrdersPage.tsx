@@ -25,6 +25,7 @@ import {
   type CreateDialogConfig,
 } from "@/components/data/CreateDialog";
 import { UuidCell } from "@/components/ui/uuid-cell";
+import { useTranslation } from "react-i18next";
 
 type OrderStatus =
   | "PENDING"
@@ -71,6 +72,7 @@ const STATUS_VARIANTS: Record<
 };
 
 export default function OrdersPage() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,7 +100,7 @@ export default function OrdersPage() {
       else if (Array.isArray(data?.items)) arr = data.items;
       setOrders(arr as Order[]);
     } catch {
-      toast.error("Failed to load orders");
+      toast.error(t("orders.toast.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -106,17 +108,17 @@ export default function OrdersPage() {
 
   useEffect(() => {
     loadOrders();
-    document.title = "Orders · VMS";
-  }, [priceFilter.min, priceFilter.max]);
+    document.title = `${t("orders.title")} · VMS`;
+  }, [priceFilter.min, priceFilter.max, t]);
 
   async function handleStatusChange(orderId: string, newStatus: OrderStatus) {
     try {
       await api.patch(`/api/orders/${orderId}`, { status: newStatus });
-      toast.success(`Order status updated to ${newStatus}`);
+      toast.success(t("orders.toast.statusUpdated", { status: newStatus }));
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       await loadOrders();
     } catch {
-      toast.error("Failed to update order status");
+      toast.error(t("orders.toast.statusFailed"));
     }
   }
 
@@ -132,13 +134,16 @@ export default function OrdersPage() {
       const url = window.URL.createObjectURL(new Blob([data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `orders_${new Date().toISOString().split("T")[0]}.xlsx`);
+      link.setAttribute(
+        "download",
+        `orders_${new Date().toISOString().split("T")[0]}.xlsx`,
+      );
       document.body.appendChild(link);
       link.click();
       link.remove();
-      toast.success("Export started");
+      toast.success(t("orders.toast.exportStarted"));
     } catch {
-      toast.error("Failed to export orders");
+      toast.error(t("orders.toast.exportFailed"));
     }
   }
 
@@ -149,23 +154,31 @@ export default function OrdersPage() {
   const columns: Column<Order>[] = [
     {
       key: "id",
-      label: "ID",
+      label: t("orders.table.id"),
       render: (v: any) => <UuidCell value={String(v)} />,
     },
     {
       key: "externalOrderId",
-      label: "Order Ref",
-      render: (v: any) => v ? <UuidCell value={String(v)} /> : <span className="text-muted-foreground">—</span>,
+      label: t("orders.table.orderRef"),
+      render: (v: any) =>
+        v ? (
+          <UuidCell value={String(v)} />
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
     },
     {
       key: "status",
-      label: "Status",
+      label: t("orders.table.status"),
       render: (val: any, row: Order) => {
         const status = val as OrderStatus;
         const nextStatuses = STATUS_TRANSITIONS[status] || [];
         if (nextStatuses.length === 0) {
           return (
-            <Badge variant={STATUS_VARIANTS[status]} className="text-xs font-medium">
+            <Badge
+              variant={STATUS_VARIANTS[status]}
+              className="text-xs font-medium"
+            >
               {status}
             </Badge>
           );
@@ -173,7 +186,11 @@ export default function OrdersPage() {
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-auto p-0 hover:bg-transparent">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto p-0 hover:bg-transparent"
+              >
                 <Badge
                   variant={STATUS_VARIANTS[status]}
                   className="text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity"
@@ -189,10 +206,13 @@ export default function OrdersPage() {
                   onClick={() => handleStatusChange(row.id, nextStatus)}
                   className="cursor-pointer"
                 >
-                  <Badge variant={STATUS_VARIANTS[nextStatus]} className="text-xs font-medium mr-2">
+                  <Badge
+                    variant={STATUS_VARIANTS[nextStatus]}
+                    className="text-xs font-medium mr-2"
+                  >
                     {nextStatus}
                   </Badge>
-                  Change to {nextStatus}
+                  {t("orders.table.changeTo", { status: nextStatus })}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -202,17 +222,17 @@ export default function OrdersPage() {
     },
     {
       key: "warehouse",
-      label: "Warehouse",
+      label: t("orders.table.warehouse"),
       render: (v: any) => v?.name ?? "—",
     },
     {
       key: "reservedAt",
-      label: "Reserved",
+      label: t("orders.table.reserved"),
       render: (v: any) => (v ? new Date(v).toLocaleDateString() : "—"),
     },
     {
       key: "totalAmount",
-      label: "Amount",
+      label: t("orders.table.amount"),
       type: "number",
       filterable: true,
       filterType: "number",
@@ -221,35 +241,40 @@ export default function OrdersPage() {
   ];
 
   const createConfig: CreateDialogConfig = {
-    title: "Order Reservation",
+    title: t("orders.dialog.title"),
     postUrl: "/api/orders",
     fields: [
       {
         key: "warehouseId",
-        label: "Warehouse",
+        label: t("orders.dialog.warehouse"),
         required: true,
         type: "fetchselect",
         fetchUrl: "/api/warehouses",
         labelKey: "name",
         searchKeys: ["code"],
-        placeholder: "Select warehouse…",
+        placeholder: t("orders.dialog.selectWarehouse"),
       },
       {
         key: "items",
-        label: "Reserved Items",
+        label: t("orders.dialog.reservedItems"),
         type: "items",
         required: true,
         columns: [
           {
             key: "productId",
-            label: "Product",
+            label: t("orders.dialog.product"),
             type: "fetchselect",
             fetchUrl: "/api/products",
             labelKey: "name",
             searchKeys: ["sku"],
-            placeholder: "Select product…",
+            placeholder: t("orders.dialog.selectProduct"),
           },
-          { key: "qtyReserved", label: "Qty", type: "number", placeholder: "1" },
+          {
+            key: "qtyReserved",
+            label: t("orders.dialog.qty"),
+            type: "number",
+            placeholder: "1",
+          },
         ],
       },
     ],
@@ -259,15 +284,24 @@ export default function OrdersPage() {
   return (
     <>
       <PageHeader
-        title="Orders"
-        description="Order reservations"
+        title={t("orders.title")}
+        description={t("orders.subtitle")}
         action={
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={handleExport}>
-              <Download className="h-4 w-4" /> Export
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={handleExport}
+            >
+              <Download className="h-4 w-4" /> {t("orders.export")}
             </Button>
-            <Button onClick={() => setCreateOpen(true)} size="sm" className="gap-1.5">
-              <Plus className="h-4 w-4" /> New
+            <Button
+              onClick={() => setCreateOpen(true)}
+              size="sm"
+              className="gap-1.5"
+            >
+              <Plus className="h-4 w-4" /> {t("orders.new")}
             </Button>
           </div>
         }
@@ -275,21 +309,27 @@ export default function OrdersPage() {
 
       {/* Price filter bar */}
       <div className="flex flex-wrap gap-2 items-center mb-4 p-3 rounded-lg border border-border bg-muted/30">
-        <Label className="text-sm shrink-0 text-muted-foreground">Filter by amount:</Label>
+        <Label className="text-sm shrink-0 text-muted-foreground">
+          {t("orders.filter.byAmount")}
+        </Label>
         <div className="flex items-center gap-2">
           <Input
             type="number"
-            placeholder="Min"
+            placeholder={t("orders.filter.min")}
             value={priceFilter.min}
-            onChange={(e) => setPriceFilter((p) => ({ ...p, min: e.target.value }))}
+            onChange={(e) =>
+              setPriceFilter((p) => ({ ...p, min: e.target.value }))
+            }
             className="h-8 w-24 text-sm"
           />
           <span className="text-muted-foreground text-sm">—</span>
           <Input
             type="number"
-            placeholder="Max"
+            placeholder={t("orders.filter.max")}
             value={priceFilter.max}
-            onChange={(e) => setPriceFilter((p) => ({ ...p, max: e.target.value }))}
+            onChange={(e) =>
+              setPriceFilter((p) => ({ ...p, max: e.target.value }))
+            }
             className="h-8 w-24 text-sm"
           />
         </div>
@@ -300,26 +340,26 @@ export default function OrdersPage() {
             className="h-8 gap-1 text-muted-foreground"
             onClick={() => setPriceFilter({ min: "", max: "" })}
           >
-            <X className="h-3.5 w-3.5" /> Clear filter
+            <X className="h-3.5 w-3.5" /> {t("orders.filter.clearFilter")}
           </Button>
         )}
         {hasFilter && (
           <span className="text-xs text-muted-foreground ml-auto">
-            Showing filtered results
+            {t("orders.filter.showingFiltered")}
           </span>
         )}
       </div>
 
       {loading ? (
         <div className="rounded-xl border border-dashed border-border bg-card p-12 text-center">
-          <p className="text-sm text-muted-foreground">Loading…</p>
+          <p className="text-sm text-muted-foreground">{t("orders.loading")}</p>
         </div>
       ) : (
         <EditableTable
           rows={orders}
           columns={columns}
           onSave={handleSave}
-          empty="No orders found"
+          empty={t("orders.empty")}
         />
       )}
 

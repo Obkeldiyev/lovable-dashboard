@@ -31,6 +31,7 @@ import {
   Trash2,
   ClipboardList,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 type Agent = {
   id: string;
@@ -58,6 +59,7 @@ type VisitPlan = {
 };
 
 export default function PlanManagementPage() {
+  const { t } = useTranslation();
   const today = new Date().toISOString().split("T")[0];
 
   // State
@@ -80,7 +82,7 @@ export default function PlanManagementPage() {
 
   // Load agents and shops once
   useEffect(() => {
-    document.title = "Plan Management · VMS";
+    document.title = `${t("planManagement.title")} · VMS`;
     async function loadMeta() {
       setLoadingData(true);
       try {
@@ -97,13 +99,13 @@ export default function PlanManagementPage() {
           setShops(Array.isArray(d) ? d : []);
         }
       } catch {
-        toast.error("Failed to load data");
+        toast.error(t("planManagement.toast.loadDataFailed"));
       } finally {
         setLoadingData(false);
       }
     }
     loadMeta();
-  }, []);
+  }, [t]);
 
   // Load plans when date or agent changes
   const loadPlans = useCallback(async () => {
@@ -117,11 +119,11 @@ export default function PlanManagementPage() {
       const d = data?.data ?? data ?? [];
       setPlans(Array.isArray(d) ? d : []);
     } catch {
-      toast.error("Failed to load plans");
+      toast.error(t("planManagement.toast.loadPlansFailed"));
     } finally {
       setLoadingPlans(false);
     }
-  }, [selectedDate, selectedAgent]);
+  }, [selectedDate, selectedAgent, t]);
 
   useEffect(() => {
     loadPlans();
@@ -138,9 +140,10 @@ export default function PlanManagementPage() {
 
   // Submit — create one plan per shop
   async function handleSubmit() {
-    if (!selectedAgent) return toast.error("Select an agent");
+    if (!selectedAgent)
+      return toast.error(t("planManagement.toast.selectAgentWarning"));
     if (selectedShops.length === 0)
-      return toast.error("Select at least one shop");
+      return toast.error(t("planManagement.toast.selectShopWarning"));
 
     setSubmitting(true);
     try {
@@ -155,13 +158,17 @@ export default function PlanManagementPage() {
           }),
         ),
       );
-      toast.success(`${selectedShops.length} visit plan(s) created`);
+      toast.success(
+        t("planManagement.toast.plansCreated", { count: selectedShops.length }),
+      );
       setSelectedShops([]);
       setNotes("");
       setAddOpen(false);
       loadPlans();
     } catch (e: any) {
-      toast.error(e?.response?.data?.error ?? "Failed to create plans");
+      toast.error(
+        e?.response?.data?.error ?? t("planManagement.toast.createFailed"),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -171,10 +178,10 @@ export default function PlanManagementPage() {
   async function handleDelete(planId: string) {
     try {
       await api.delete(`/api/field/visit-plans/${planId}`);
-      toast.success("Plan removed");
+      toast.success(t("planManagement.toast.planRemoved"));
       setPlans((p) => p.filter((x) => x.id !== planId));
     } catch {
-      toast.error("Failed to delete plan");
+      toast.error(t("planManagement.toast.deleteFailed"));
     }
   }
 
@@ -209,10 +216,10 @@ export default function PlanManagementPage() {
         <div>
           <h2 className="text-xl font-semibold tracking-tight flex items-center gap-2">
             <ClipboardList className="h-5 w-5 text-primary" />
-            Plan Management
+            {t("planManagement.title")}
           </h2>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Assign and track daily visit plans for agents
+            {t("planManagement.subtitle")}
           </p>
         </div>
         <div className="flex gap-2">
@@ -225,14 +232,14 @@ export default function PlanManagementPage() {
             <RefreshCw
               className={cn("h-3.5 w-3.5", loadingPlans && "animate-spin")}
             />
-            Refresh
+            {t("planManagement.refresh")}
           </Button>
           <Button
             size="sm"
             onClick={() => setAddOpen(true)}
             className="gap-1.5"
           >
-            <Plus className="h-4 w-4" /> New Plan
+            <Plus className="h-4 w-4" /> {t("planManagement.newPlan")}
           </Button>
         </div>
       </div>
@@ -240,7 +247,7 @@ export default function PlanManagementPage() {
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-end">
         <div className="space-y-1">
-          <Label className="text-xs">Date</Label>
+          <Label className="text-xs">{t("planManagement.date")}</Label>
           <Input
             type="date"
             value={selectedDate}
@@ -249,13 +256,13 @@ export default function PlanManagementPage() {
           />
         </div>
         <div className="space-y-1 min-w-[180px]">
-          <Label className="text-xs">Agent (optional)</Label>
+          <Label className="text-xs">{t("planManagement.agentOptional")}</Label>
           <Select value={selectedAgent} onValueChange={setSelectedAgent}>
             <SelectTrigger className="h-9">
-              <SelectValue placeholder="All agents" />
+              <SelectValue placeholder={t("planManagement.allAgents")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All agents</SelectItem>
+              <SelectItem value="">{t("planManagement.allAgents")}</SelectItem>
               {agents.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
                   {a.name ?? a.email ?? a.id.slice(0, 8)}
@@ -269,19 +276,23 @@ export default function PlanManagementPage() {
       {/* Stats */}
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: "Total", value: planStats.total, color: "" },
           {
-            label: "Planned",
+            label: t("planManagement.stats.total"),
+            value: planStats.total,
+            color: "",
+          },
+          {
+            label: t("planManagement.stats.planned"),
             value: planStats.planned,
             color: "text-muted-foreground",
           },
           {
-            label: "Active",
+            label: t("planManagement.stats.active"),
             value: planStats.inProgress,
             color: "text-blue-600",
           },
           {
-            label: "Done",
+            label: t("planManagement.stats.done"),
             value: planStats.completed,
             color: "text-green-600",
           },
@@ -311,7 +322,7 @@ export default function PlanManagementPage() {
         <div className="rounded-xl border border-dashed border-border p-12 text-center">
           <ClipboardList className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
           <p className="text-sm text-muted-foreground">
-            No plans for this date
+            {t("planManagement.noPlansForDate")}
           </p>
           <Button
             size="sm"
@@ -319,7 +330,7 @@ export default function PlanManagementPage() {
             className="mt-3 gap-1.5"
             onClick={() => setAddOpen(true)}
           >
-            <Plus className="h-3.5 w-3.5" /> Create Plan
+            <Plus className="h-3.5 w-3.5" /> {t("planManagement.createPlan")}
           </Button>
         </div>
       ) : (
@@ -395,14 +406,14 @@ export default function PlanManagementPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CalendarDays className="h-4 w-4 text-primary" />
-              New Visit Plan
+              {t("planManagement.dialog.title")}
             </DialogTitle>
           </DialogHeader>
 
           <div className="overflow-y-auto flex-1 space-y-4 py-1 pr-1">
             {/* Date */}
             <div className="space-y-1.5">
-              <Label className="text-xs">Date</Label>
+              <Label className="text-xs">{t("planManagement.date")}</Label>
               <Input
                 type="date"
                 value={selectedDate}
@@ -413,19 +424,21 @@ export default function PlanManagementPage() {
 
             {/* Agent */}
             <div className="space-y-1.5">
-              <Label className="text-xs">Agent *</Label>
+              <Label className="text-xs">
+                {t("planManagement.agentRequired")}
+              </Label>
               <Select value={selectedAgent} onValueChange={setSelectedAgent}>
                 <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Select agent" />
+                  <SelectValue placeholder={t("planManagement.selectAgent")} />
                 </SelectTrigger>
                 <SelectContent>
                   {loadingData ? (
                     <SelectItem value="loading" disabled>
-                      Loading...
+                      {t("planManagement.loadingAgents")}
                     </SelectItem>
                   ) : agents.length === 0 ? (
                     <SelectItem value="empty" disabled>
-                      No agents found
+                      {t("planManagement.noAgentsFound")}
                     </SelectItem>
                   ) : (
                     agents.map((a) => (
@@ -441,15 +454,17 @@ export default function PlanManagementPage() {
             {/* Shops */}
             <div className="space-y-1.5">
               <Label className="text-xs">
-                Shops *
+                {t("planManagement.shopsRequired")}
                 {selectedShops.length > 0 && (
                   <Badge variant="secondary" className="ml-2 text-[10px]">
-                    {selectedShops.length} selected
+                    {t("planManagement.selectedCount", {
+                      count: selectedShops.length,
+                    })}
                   </Badge>
                 )}
               </Label>
               <Input
-                placeholder="Search shops..."
+                placeholder={t("planManagement.searchShops")}
                 value={shopSearch}
                 onChange={(e) => setShopSearch(e.target.value)}
                 className="h-8 text-xs"
@@ -457,7 +472,7 @@ export default function PlanManagementPage() {
               <div className="max-h-48 overflow-y-auto rounded-lg border border-border divide-y divide-border">
                 {filteredShops.length === 0 ? (
                   <div className="p-3 text-xs text-muted-foreground text-center">
-                    No shops found
+                    {t("planManagement.noShopsFound")}
                   </div>
                 ) : (
                   filteredShops.map((shop) => {
@@ -523,10 +538,12 @@ export default function PlanManagementPage() {
 
             {/* Notes */}
             <div className="space-y-1.5">
-              <Label className="text-xs">Notes (optional)</Label>
+              <Label className="text-xs">
+                {t("planManagement.notesOptional")}
+              </Label>
               <Textarea
                 rows={2}
-                placeholder="Instructions for the agent…"
+                placeholder={t("planManagement.notesPlaceholder")}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="resize-none text-sm"
@@ -540,7 +557,7 @@ export default function PlanManagementPage() {
               size="sm"
               onClick={() => setAddOpen(false)}
             >
-              Cancel
+              {t("planManagement.cancel")}
             </Button>
             <Button
               size="sm"
@@ -551,8 +568,10 @@ export default function PlanManagementPage() {
               className="gap-1.5"
             >
               {submitting
-                ? "Creating…"
-                : `Create ${selectedShops.length > 0 ? `${selectedShops.length} ` : ""}Plan${selectedShops.length > 1 ? "s" : ""}`}
+                ? t("planManagement.creating")
+                : t("planManagement.createButton", {
+                    count: selectedShops.length,
+                  })}
             </Button>
           </DialogFooter>
         </DialogContent>
