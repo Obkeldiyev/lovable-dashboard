@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { GenericPage } from "@/components/data/GenericPage";
 
 // Backend: createPurchaseOrder({
@@ -5,80 +6,103 @@ import { GenericPage } from "@/components/data/GenericPage";
 //   items*: [{ productId*, qty*, unitCost*, taxRate?, notes? }]
 // })
 export default function PurchaseOrdersPage() {
+  const { t } = useTranslation();
+
   return (
     <GenericPage
-      title="Purchase Orders"
-      description="Procurement purchase orders"
+      title={t("purchaseOrders.title")}
+      description={t("purchaseOrders.description")}
       path="/api/purchase-orders"
       exportUrl="/api/purchase-orders/export"
       deletable={false}
       columns={[
-        { key: "poNumber", label: "PO Number" },
+        { key: "poNumber", label: t("purchaseOrders.columns.poNumber") },
         {
           key: "supplier",
-          label: "Supplier",
+          label: t("purchaseOrders.columns.supplier"),
           render: (v: any) => v?.name ?? "—",
         },
-        { key: "status", label: "Status", type: "badge" },
+        {
+          key: "status",
+          label: t("purchaseOrders.columns.status"),
+          type: "badge",
+        },
         {
           key: "expectedAt",
-          label: "Expected",
+          label: t("purchaseOrders.columns.expected"),
           render: (v: any) => (v ? new Date(v).toLocaleDateString() : "—"),
         },
         {
           key: "createdAt",
-          label: "Created",
+          label: t("purchaseOrders.columns.created"),
           render: (v: any) => (v ? new Date(v).toLocaleDateString() : "—"),
         },
       ]}
       createConfig={{
-        title: "Purchase Order",
+        title: t("purchaseOrders.create.title"),
         postUrl: "/api/purchase-orders",
         fields: [
           {
             key: "poNumber",
-            label: "PO Number",
+            label: t("purchaseOrders.create.poNumber"),
             required: true,
-            placeholder: "e.g. PO-2024-001",
+            placeholder: t("purchaseOrders.create.poNumberPlaceholder"),
           },
           {
             key: "supplierId",
-            label: "Supplier",
+            label: t("purchaseOrders.create.supplier"),
             required: true,
             type: "fetchselect",
             fetchUrl: "/api/suppliers",
             labelKey: "name",
             searchKeys: ["code"],
-            placeholder: "Select supplier…",
+            placeholder: t("purchaseOrders.create.supplierPlaceholder"),
           },
-          { key: "expectedAt", label: "Expected Delivery", type: "date" },
+          {
+            key: "expectedAt",
+            label: t("purchaseOrders.create.expectedDelivery"),
+            type: "date",
+          },
           {
             key: "items",
-            label: "Line Items",
+            label: t("purchaseOrders.create.lineItems"),
             type: "items",
             required: true,
             columns: [
               {
                 key: "productId",
-                label: "Product",
+                label: t("purchaseOrders.create.itemsColumns.product"),
                 type: "fetchselect",
                 fetchUrl: "/api/products",
                 labelKey: "name",
                 searchKeys: ["sku"],
-                placeholder: "Select product…",
+                placeholder: t(
+                  "purchaseOrders.create.itemsColumns.productPlaceholder",
+                ),
               },
-              { key: "qty", label: "Qty", type: "number", placeholder: "1" },
+              {
+                key: "qty",
+                label: t("purchaseOrders.create.itemsColumns.qty"),
+                type: "number",
+                placeholder: t(
+                  "purchaseOrders.create.itemsColumns.qtyPlaceholder",
+                ),
+              },
               {
                 key: "unitCost",
-                label: "Unit Cost",
+                label: t("purchaseOrders.create.itemsColumns.unitCost"),
                 type: "number",
-                placeholder: "0.00",
+                placeholder: t(
+                  "purchaseOrders.create.itemsColumns.unitCostPlaceholder",
+                ),
               },
               {
                 key: "taxRate",
-                label: "Tax %",
+                label: t("purchaseOrders.create.itemsColumns.taxRate"),
                 type: "number",
-                placeholder: "0",
+                placeholder: t(
+                  "purchaseOrders.create.itemsColumns.taxRatePlaceholder",
+                ),
               },
             ],
           },
