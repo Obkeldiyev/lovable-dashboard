@@ -26,7 +26,7 @@ const OpsPage = lazy(() => import("@/pages/OpsPage"));
 const NotificationsPage = lazy(() => import("@/pages/NotificationsPage"));
 const LogisticsPage = lazy(() => import("@/pages/LogisticsPage"));
 const LogisticsSettingsPage = lazy(
-  () => import("@/pages/LogisticsSettingsPage"),
+  () => import("@/pages/LogisticsSettingsPage")
 );
 const ShopsPage = lazy(() => import("@/pages/ShopsPage"));
 const FleetPage = lazy(() => import("@/pages/FleetPage"));
@@ -59,7 +59,10 @@ export function AppRouter() {
               <Route path="/categories" element={<CategoriesPage />} />
               <Route path="/suppliers" element={<SuppliersPage />} />
               <Route path="/warehouses" element={<WarehousesPage />} />
-              <Route path="/purchase-orders" element={<PurchaseOrdersPage />} />
+              <Route
+                path="/purchase-orders"
+                element={<PurchaseOrdersPage />}
+              />
               <Route path="/orders" element={<OrdersPage />} />
               <Route path="/receivings" element={<ReceivingsPage />} />
               <Route path="/shipments" element={<ShipmentsPage />} />
@@ -76,7 +79,10 @@ export function AppRouter() {
                 />
               </Route>
               <Route path="/notifications" element={<NotificationsPage />} />
-              <Route path="/settings/appearance" element={<AppearancePage />} />
+              <Route
+                path="/settings/appearance"
+                element={<AppearancePage />}
+              />
               <Route
                 path="/settings/logistics"
                 element={<LogisticsSettingsPage />}
@@ -87,16 +93,25 @@ export function AppRouter() {
               <Route path="/agent" element={<AgentPage />} />
               <Route
                 element={
-                  <RoleRoute allow={["SUPER_ADMIN", "DIRECTOR", "MANAGER"]} />
+                  <RoleRoute
+                    allow={["SUPER_ADMIN", "DIRECTOR", "MANAGER"]}
+                  />
                 }
               >
                 <Route path="/plans" element={<PlanManagementPage />} />
               </Route>
               <Route path="/agent/pricing" element={<ShopPricingPage />} />
+
+              {/* Protected Reports Route */}
               <Route
                 element={
                   <RoleRoute
-                    allow={["SUPER_ADMIN", "DIRECTOR", "MANAGER", "ACCOUNTANT"]}
+                    allow={[
+                      "SUPER_ADMIN",
+                      "DIRECTOR",
+                      "MANAGER",
+                      "ACCOUNTANT",
+                    ]}
                   />
                 }
               >
