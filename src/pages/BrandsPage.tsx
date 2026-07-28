@@ -1,22 +1,35 @@
+import { useTranslation } from "react-i18next";
 import { GenericPage } from "@/components/data/GenericPage";
 
 // Backend: createBrand({ tenantId, name })
 // Schema: Brand { tenantId, name } — no description field
 export default function BrandsPage() {
+  const { t } = useTranslation();
+
   return (
     <GenericPage
-      title="Brands"
-      description="Product brands"
+      title={t("brandsPage.title")}
+      description={t("brandsPage.description")}
       path="/api/brands"
+      exportUrl="/api/brands/export"
       columns={[
-        { key: "name",      label: "Name",     editable: true },
-        { key: "createdAt", label: "Created",  render: (v: any) => v ? new Date(v).toLocaleDateString() : "—" },
+        { key: "name", label: t("brandsPage.columns.name"), editable: true },
+        {
+          key: "createdAt",
+          label: t("brandsPage.columns.created"),
+          render: (v: any) => (v ? new Date(v).toLocaleDateString() : "—"),
+        },
       ]}
       createConfig={{
-        title: "Brand",
+        title: t("brandsPage.createTitle"),
         postUrl: "/api/brands",
         fields: [
-          { key: "name", label: "Name", required: true, placeholder: "e.g. Samsung" },
+          {
+            key: "name",
+            label: t("brandsPage.fields.nameLabel"),
+            required: true,
+            placeholder: t("brandsPage.fields.namePlaceholder"),
+          },
         ],
       }}
     />

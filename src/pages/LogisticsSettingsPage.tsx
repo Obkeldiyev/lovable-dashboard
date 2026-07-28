@@ -3,22 +3,33 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useLogisticsSettings } from "@/features/logistics/settings";
 import { Button } from "@/components/ui/button";
 import { Locate } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function LogisticsSettingsPage() {
+  const { t } = useTranslation();
   const [s, setS] = useLogisticsSettings();
   const update = (p: Partial<typeof s>) => setS({ ...s, ...p });
 
   function detectLocation() {
-    if (!navigator.geolocation) return toast.error("Geolocation not supported");
+    if (!navigator.geolocation)
+      return toast.error(t("logisticsSettings.toast.geoNotSupported"));
     navigator.geolocation.getCurrentPosition(
       (p) => {
-        update({ defaultCenter: { lat: p.coords.latitude, lng: p.coords.longitude } });
-        toast.success("Default map center updated");
+        update({
+          defaultCenter: { lat: p.coords.latitude, lng: p.coords.longitude },
+        });
+        toast.success(t("logisticsSettings.toast.locationUpdated"));
       },
       (e) => toast.error(e.message),
     );
@@ -27,34 +38,54 @@ export default function LogisticsSettingsPage() {
   return (
     <div className="max-w-3xl space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold tracking-tight">Logistics settings</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">
+          {t("logisticsSettings.title")}
+        </h2>
         <p className="text-sm text-muted-foreground">
-          Configure GPS, map behavior and tracking preferences.
+          {t("logisticsSettings.subtitle")}
         </p>
       </div>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">GPS & tracking</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="text-base">
+            {t("logisticsSettings.gpsAndTracking")}
+          </CardTitle>
+        </CardHeader>
         <CardContent className="space-y-4">
           <Row>
             <Label className="flex flex-col">
-              <span>Enable GPS</span>
-              <span className="text-xs text-muted-foreground">Required for drivers to receive routes and broadcast location.</span>
+              <span>{t("logisticsSettings.enableGps")}</span>
+              <span className="text-xs text-muted-foreground">
+                {t("logisticsSettings.enableGpsDesc")}
+              </span>
             </Label>
-            <Switch checked={s.gpsEnabled} onCheckedChange={(v) => update({ gpsEnabled: v })} />
+            <Switch
+              checked={s.gpsEnabled}
+              onCheckedChange={(v) => update({ gpsEnabled: v })}
+            />
           </Row>
           <Row>
             <Label className="flex flex-col">
-              <span>High accuracy mode</span>
-              <span className="text-xs text-muted-foreground">Uses more battery but improves GPS fix.</span>
+              <span>{t("logisticsSettings.highAccuracy")}</span>
+              <span className="text-xs text-muted-foreground">
+                {t("logisticsSettings.highAccuracyDesc")}
+              </span>
             </Label>
-            <Switch checked={s.highAccuracy} onCheckedChange={(v) => update({ highAccuracy: v })} />
+            <Switch
+              checked={s.highAccuracy}
+              onCheckedChange={(v) => update({ highAccuracy: v })}
+            />
           </Row>
           <div>
-            <Label className="text-sm">Location ping interval — every {s.pingIntervalSec}s</Label>
+            <Label className="text-sm">
+              {t("logisticsSettings.pingInterval", { sec: s.pingIntervalSec })}
+            </Label>
             <Slider
               className="mt-2"
-              min={2} max={60} step={1}
+              min={2}
+              max={60}
+              step={1}
               value={[s.pingIntervalSec]}
               onValueChange={([v]) => update({ pingIntervalSec: v })}
             />
@@ -63,47 +94,104 @@ export default function LogisticsSettingsPage() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Map</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="text-base">
+            {t("logisticsSettings.map")}
+          </CardTitle>
+        </CardHeader>
         <CardContent className="space-y-4">
           <Row>
-            <Label>Show traffic layer</Label>
-            <Switch checked={s.trafficLayer} onCheckedChange={(v) => update({ trafficLayer: v })} />
+            <Label>{t("logisticsSettings.showTrafficLayer")}</Label>
+            <Switch
+              checked={s.trafficLayer}
+              onCheckedChange={(v) => update({ trafficLayer: v })}
+            />
           </Row>
           <Row>
-            <Label>Auto-center on driver</Label>
-            <Switch checked={s.autoCenterOnDriver} onCheckedChange={(v) => update({ autoCenterOnDriver: v })} />
+            <Label>{t("logisticsSettings.autoCenterOnDriver")}</Label>
+            <Switch
+              checked={s.autoCenterOnDriver}
+              onCheckedChange={(v) => update({ autoCenterOnDriver: v })}
+            />
           </Row>
           <Row>
-            <Label>Voice guidance</Label>
-            <Switch checked={s.voiceGuidance} onCheckedChange={(v) => update({ voiceGuidance: v })} />
+            <Label>{t("logisticsSettings.voiceGuidance")}</Label>
+            <Switch
+              checked={s.voiceGuidance}
+              onCheckedChange={(v) => update({ voiceGuidance: v })}
+            />
           </Row>
           <div>
-            <Label className="text-sm">Default zoom — {s.defaultMapZoom}</Label>
-            <Slider className="mt-2" min={4} max={18} step={1}
-              value={[s.defaultMapZoom]} onValueChange={([v]) => update({ defaultMapZoom: v })} />
+            <Label className="text-sm">
+              {t("logisticsSettings.defaultZoom", { zoom: s.defaultMapZoom })}
+            </Label>
+            <Slider
+              className="mt-2"
+              min={4}
+              max={18}
+              step={1}
+              value={[s.defaultMapZoom]}
+              onValueChange={([v]) => update({ defaultMapZoom: v })}
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs">Default lat</Label>
-              <Input type="number" step="0.0001" value={s.defaultCenter.lat}
-                onChange={(e) => update({ defaultCenter: { ...s.defaultCenter, lat: Number(e.target.value) } })} />
+              <Label className="text-xs">
+                {t("logisticsSettings.defaultLat")}
+              </Label>
+              <Input
+                type="number"
+                step="0.0001"
+                value={s.defaultCenter.lat}
+                onChange={(e) =>
+                  update({
+                    defaultCenter: {
+                      ...s.defaultCenter,
+                      lat: Number(e.target.value),
+                    },
+                  })
+                }
+              />
             </div>
             <div>
-              <Label className="text-xs">Default lng</Label>
-              <Input type="number" step="0.0001" value={s.defaultCenter.lng}
-                onChange={(e) => update({ defaultCenter: { ...s.defaultCenter, lng: Number(e.target.value) } })} />
+              <Label className="text-xs">
+                {t("logisticsSettings.defaultLng")}
+              </Label>
+              <Input
+                type="number"
+                step="0.0001"
+                value={s.defaultCenter.lng}
+                onChange={(e) =>
+                  update({
+                    defaultCenter: {
+                      ...s.defaultCenter,
+                      lng: Number(e.target.value),
+                    },
+                  })
+                }
+              />
             </div>
           </div>
           <Button variant="outline" onClick={detectLocation} className="gap-2">
-            <Locate className="h-4 w-4" /> Use my current location
+            <Locate className="h-4 w-4" />{" "}
+            {t("logisticsSettings.useCurrentLocation")}
           </Button>
           <div>
-            <Label className="text-xs">Units</Label>
-            <Select value={s.units} onValueChange={(v: "km" | "mi") => update({ units: v })}>
-              <SelectTrigger className="mt-1 w-32"><SelectValue /></SelectTrigger>
+            <Label className="text-xs">{t("logisticsSettings.units")}</Label>
+            <Select
+              value={s.units}
+              onValueChange={(v: "km" | "mi") => update({ units: v })}
+            >
+              <SelectTrigger className="mt-1 w-32">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                <SelectItem value="km">Kilometers</SelectItem>
-                <SelectItem value="mi">Miles</SelectItem>
+                <SelectItem value="km">
+                  {t("logisticsSettings.kilometers")}
+                </SelectItem>
+                <SelectItem value="mi">
+                  {t("logisticsSettings.miles")}
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -111,12 +199,24 @@ export default function LogisticsSettingsPage() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Refresh</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="text-base">
+            {t("logisticsSettings.refresh")}
+          </CardTitle>
+        </CardHeader>
         <CardContent>
           <div>
-            <Label className="text-sm">Auto-refresh deliveries every {s.autoRefreshSec}s</Label>
-            <Slider className="mt-2" min={5} max={120} step={5}
-              value={[s.autoRefreshSec]} onValueChange={([v]) => update({ autoRefreshSec: v })} />
+            <Label className="text-sm">
+              {t("logisticsSettings.autoRefresh", { sec: s.autoRefreshSec })}
+            </Label>
+            <Slider
+              className="mt-2"
+              min={5}
+              max={120}
+              step={5}
+              value={[s.autoRefreshSec]}
+              onValueChange={([v]) => update({ autoRefreshSec: v })}
+            />
           </div>
         </CardContent>
       </Card>
@@ -125,5 +225,7 @@ export default function LogisticsSettingsPage() {
 }
 
 function Row({ children }: { children: React.ReactNode }) {
-  return <div className="flex items-center justify-between gap-4">{children}</div>;
+  return (
+    <div className="flex items-center justify-between gap-4">{children}</div>
+  );
 }

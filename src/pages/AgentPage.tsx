@@ -1,20 +1,14 @@
 /**
  * AgentPage — Field agent visit management.
- *
- * Features:
- * - View today's visit plans (assigned to current user)
- * - Check in / check out with GPS coordinates
- * - Take photos, record voice notes, attach documents
- * - Log orders placed, returns, merchandising score
- * - View visit history per shop
- * - Custom pricing per shop (price list)
+ * Fully internationalized with react-i18next.
  */
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next"; // 1. Import qo'shildi
 import { api } from "@/lib/api";
 import { useAppSelector } from "@/store";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,12 +17,28 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  MapPin, CheckCircle2, LogIn, LogOut, Camera, Mic, MicOff,
-  FileText, RefreshCw, Clock, ShoppingBag, RotateCcw, Star,
-  ChevronRight, X, Play, Square, Download, Upload,
+  MapPin,
+  CheckCircle2,
+  LogIn,
+  LogOut,
+  Camera,
+  Mic,
+  FileText,
+  RefreshCw,
+  ShoppingBag,
+  RotateCcw,
+  Star,
+  ChevronRight,
+  X,
+  Play,
+  Square,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -36,7 +46,14 @@ import {
 type VisitPlan = {
   id: string;
   shopId: string;
-  shop: { id: string; name: string; address?: string; code?: string; latitude?: number; longitude?: number };
+  shop: {
+    id: string;
+    name: string;
+    address?: string;
+    code?: string;
+    latitude?: number;
+    longitude?: number;
+  };
   plannedDate: string;
   status: "PLANNED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "MISSED";
   priority: number;
@@ -60,10 +77,10 @@ type Visit = {
 type MediaItem = {
   id: string;
   type: "photo" | "voice" | "document";
-  url: string;        // local blob URL
+  url: string;
   name: string;
   size?: number;
-  duration?: number;  // seconds, for voice
+  duration?: number;
   createdAt: string;
 };
 
@@ -92,6 +109,7 @@ function usePhotoCapture() {
 }
 
 function useVoiceRecorder() {
+  const { t } = useTranslation();
   const [recording, setRecording] = useState(false);
   const [duration, setDuration] = useState(0);
   const mediaRef = useRef<MediaRecorder | null>(null);
@@ -110,17 +128,22 @@ function useVoiceRecorder() {
       setDuration(0);
       timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
     } catch {
-      toast.error("Microphone access denied");
+      toast.error(t("agentPage.toasts.micDenied"));
     }
   }
 
   function stop(): Promise<File | null> {
     return new Promise((resolve) => {
       const mr = mediaRef.current;
-      if (!mr) { resolve(null); return; }
+      if (!mr) {
+        resolve(null);
+        return;
+      }
       mr.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        const file = new File([blob], `voice-${Date.now()}.webm`, { type: "audio/webm" });
+        const file = new File([blob], `voice-${Date.now()}.webm`, {
+          type: "audio/webm",
+        });
         resolve(file);
       };
       mr.stop();
@@ -150,16 +173,27 @@ function VisitCard({
   onCheckOut: (visit: Visit) => void;
   onOpenDetail: (plan: VisitPlan, visit?: Visit) => void;
 }) {
-  const statusColor = {
-    PLANNED: "bg-muted text-muted-foreground",
-    IN_PROGRESS: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-    COMPLETED: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-    CANCELLED: "bg-destructive/10 text-destructive",
-    MISSED: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
-  }[plan.status] ?? "bg-muted text-muted-foreground";
+  const { t } = useTranslation();
+
+  const statusColor =
+    {
+      PLANNED: "bg-muted text-muted-foreground",
+      IN_PROGRESS:
+        "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+      COMPLETED:
+        "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+      CANCELLED: "bg-destructive/10 text-destructive",
+      MISSED:
+        "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
+    }[plan.status] ?? "bg-muted text-muted-foreground";
 
   return (
-    <Card className={cn("transition-all", plan.status === "COMPLETED" && "opacity-60")}>
+    <Card
+      className={cn(
+        "transition-all",
+        plan.status === "COMPLETED" && "opacity-60",
+      )}
+    >
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
           <div className="h-10 w-10 rounded-lg bg-primary/10 grid place-items-center shrink-0">
@@ -169,38 +203,67 @@ function VisitCard({
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-semibold text-sm">{plan.shop.name}</span>
               {plan.shop.code && (
-                <Badge variant="secondary" className="text-[10px]">{plan.shop.code}</Badge>
+                <Badge variant="secondary" className="text-[10px]">
+                  {plan.shop.code}
+                </Badge>
               )}
-              <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium ml-auto", statusColor)}>
-                {plan.status}
+              <span
+                className={cn(
+                  "text-[10px] px-2 py-0.5 rounded-full font-medium ml-auto",
+                  statusColor,
+                )}
+              >
+                {t(`agentPage.status.${plan.status}`, { defaultValue: plan.status })}
               </span>
             </div>
             {plan.shop.address && (
-              <p className="text-xs text-muted-foreground mt-0.5 truncate">{plan.shop.address}</p>
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                {plan.shop.address}
+              </p>
             )}
             {plan.notes && (
-              <p className="text-xs text-muted-foreground mt-1 italic">"{plan.notes}"</p>
+              <p className="text-xs text-muted-foreground mt-1 italic">
+                "{plan.notes}"
+              </p>
             )}
 
             {/* Action buttons */}
             <div className="flex items-center gap-2 mt-3 flex-wrap">
               {plan.status === "PLANNED" && !activeVisit && (
-                <Button size="xs" onClick={() => onStart(plan.id)} className="gap-1">
-                  <Play className="h-3 w-3" /> Start visit
+                <Button
+                  size="xs"
+                  onClick={() => onStart(plan.id)}
+                  className="gap-1"
+                >
+                  <Play className="h-3 w-3" /> {t("agentPage.actions.startVisit")}
                 </Button>
               )}
               {activeVisit && activeVisit.status === "PLANNED" && (
-                <Button size="xs" onClick={() => onCheckIn(activeVisit.id)} className="gap-1">
-                  <LogIn className="h-3 w-3" /> Check in
+                <Button
+                  size="xs"
+                  onClick={() => onCheckIn(activeVisit.id)}
+                  className="gap-1"
+                >
+                  <LogIn className="h-3 w-3" /> {t("agentPage.actions.checkIn")}
                 </Button>
               )}
               {activeVisit && activeVisit.status === "CHECKED_IN" && (
-                <Button size="xs" variant="outline" onClick={() => onCheckOut(activeVisit)} className="gap-1">
-                  <LogOut className="h-3 w-3" /> Check out
+                <Button
+                  size="xs"
+                  variant="outline"
+                  onClick={() => onCheckOut(activeVisit)}
+                  className="gap-1"
+                >
+                  <LogOut className="h-3 w-3" /> {t("agentPage.actions.checkOut")}
                 </Button>
               )}
-              <Button size="xs" variant="ghost" onClick={() => onOpenDetail(plan, activeVisit)} className="gap-1 ml-auto">
-                Details <ChevronRight className="h-3 w-3" />
+              <Button
+                size="xs"
+                variant="ghost"
+                onClick={() => onOpenDetail(plan, activeVisit)}
+                className="gap-1 ml-auto"
+              >
+                {t("agentPage.actions.details")} <ChevronRight className="h-3 w-3" />
               </Button>
             </div>
           </div>
@@ -223,8 +286,15 @@ function VisitDetailDialog({
   onOpenChange: (v: boolean) => void;
   plan: VisitPlan | null;
   visit?: Visit;
-  onCheckOut: (data: { orderCount: number; returnCount: number; merchandisingScore: number; notes: string; media: MediaItem[] }) => void;
+  onCheckOut: (data: {
+    orderCount: number;
+    returnCount: number;
+    merchandisingScore: number;
+    notes: string;
+    media: MediaItem[];
+  }) => void;
 }) {
+  const { t } = useTranslation();
   const [orderCount, setOrderCount] = useState(0);
   const [returnCount, setReturnCount] = useState(0);
   const [score, setScore] = useState(5);
@@ -247,15 +317,18 @@ function VisitDetailDialog({
 
   function addPhoto(file: File) {
     const url = URL.createObjectURL(file);
-    setMedia((m) => [...m, {
-      id: crypto.randomUUID(),
-      type: "photo",
-      url,
-      name: file.name,
-      size: file.size,
-      createdAt: new Date().toISOString(),
-    }]);
-    toast.success("Photo added");
+    setMedia((m) => [
+      ...m,
+      {
+        id: crypto.randomUUID(),
+        type: "photo",
+        url,
+        name: file.name,
+        size: file.size,
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+    toast.success(t("agentPage.toasts.photoAdded"));
   }
 
   async function handleVoice() {
@@ -263,15 +336,18 @@ function VisitDetailDialog({
       const file = await voice.stop();
       if (file) {
         const url = URL.createObjectURL(file);
-        setMedia((m) => [...m, {
-          id: crypto.randomUUID(),
-          type: "voice",
-          url,
-          name: file.name,
-          duration: voice.duration,
-          createdAt: new Date().toISOString(),
-        }]);
-        toast.success(`Voice note saved (${voice.duration}s)`);
+        setMedia((m) => [
+          ...m,
+          {
+            id: crypto.randomUUID(),
+            type: "voice",
+            url,
+            name: file.name,
+            duration: voice.duration,
+            createdAt: new Date().toISOString(),
+          },
+        ]);
+        toast.success(t("agentPage.toasts.voiceSaved", { duration: voice.duration }));
       }
     } else {
       voice.start();
@@ -280,15 +356,18 @@ function VisitDetailDialog({
 
   function addDocument(file: File) {
     const url = URL.createObjectURL(file);
-    setMedia((m) => [...m, {
-      id: crypto.randomUUID(),
-      type: "document",
-      url,
-      name: file.name,
-      size: file.size,
-      createdAt: new Date().toISOString(),
-    }]);
-    toast.success("Document attached");
+    setMedia((m) => [
+      ...m,
+      {
+        id: crypto.randomUUID(),
+        type: "document",
+        url,
+        name: file.name,
+        size: file.size,
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+    toast.success(t("agentPage.toasts.docAttached"));
   }
 
   function removeMedia(id: string) {
@@ -298,7 +377,13 @@ function VisitDetailDialog({
   async function handleCheckOut() {
     setSaving(true);
     try {
-      onCheckOut({ orderCount, returnCount, merchandisingScore: score, notes, media });
+      onCheckOut({
+        orderCount,
+        returnCount,
+        merchandisingScore: score,
+        notes,
+        media,
+      });
       onOpenChange(false);
     } finally {
       setSaving(false);
@@ -313,7 +398,7 @@ function VisitDetailDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MapPin className="h-4 w-4 text-primary" />
-            {plan?.shop.name ?? "Visit"}
+            {plan?.shop.name ?? t("agentPage.card.visit")}
           </DialogTitle>
         </DialogHeader>
 
@@ -324,10 +409,12 @@ function VisitDetailDialog({
               {visit.checkInAt && (
                 <span className="flex items-center gap-1">
                   <LogIn className="h-3.5 w-3.5" />
-                  In: {new Date(visit.checkInAt).toLocaleTimeString()}
+                  {t("agentPage.card.in", { time: new Date(visit.checkInAt).toLocaleTimeString() })}
                 </span>
               )}
-              <Badge variant="outline" className="text-[10px]">{visit.status}</Badge>
+              <Badge variant="outline" className="text-[10px]">
+                {t(`agentPage.status.${visit.status}`, { defaultValue: visit.status })}
+              </Badge>
             </div>
           )}
 
@@ -335,10 +422,11 @@ function VisitDetailDialog({
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs flex items-center gap-1">
-                <ShoppingBag className="h-3 w-3" /> Orders
+                <ShoppingBag className="h-3 w-3" /> {t("agentPage.card.orders")}
               </Label>
               <Input
-                type="number" min={0}
+                type="number"
+                min={0}
                 value={orderCount}
                 onChange={(e) => setOrderCount(Number(e.target.value))}
                 className="h-9 text-center text-lg font-bold"
@@ -346,10 +434,11 @@ function VisitDetailDialog({
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs flex items-center gap-1">
-                <RotateCcw className="h-3 w-3" /> Returns
+                <RotateCcw className="h-3 w-3" /> {t("agentPage.card.returns")}
               </Label>
               <Input
-                type="number" min={0}
+                type="number"
+                min={0}
                 value={returnCount}
                 onChange={(e) => setReturnCount(Number(e.target.value))}
                 className="h-9 text-center text-lg font-bold"
@@ -357,12 +446,16 @@ function VisitDetailDialog({
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs flex items-center gap-1">
-                <Star className="h-3 w-3" /> Score (1-10)
+                <Star className="h-3 w-3" /> {t("agentPage.card.score")}
               </Label>
               <Input
-                type="number" min={1} max={10}
+                type="number"
+                min={1}
+                max={10}
                 value={score}
-                onChange={(e) => setScore(Math.min(10, Math.max(1, Number(e.target.value))))}
+                onChange={(e) =>
+                  setScore(Math.min(10, Math.max(1, Number(e.target.value))))
+                }
                 className="h-9 text-center text-lg font-bold"
               />
             </div>
@@ -370,10 +463,10 @@ function VisitDetailDialog({
 
           {/* Notes */}
           <div className="space-y-1.5">
-            <Label className="text-xs">Notes</Label>
+            <Label className="text-xs">{t("agentPage.card.notes")}</Label>
             <Textarea
               rows={3}
-              placeholder="Visit notes, observations…"
+              placeholder={t("agentPage.card.notesPlaceholder")}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="resize-none text-sm"
@@ -384,7 +477,7 @@ function VisitDetailDialog({
 
           {/* Media capture */}
           <div className="space-y-2">
-            <Label className="text-xs font-semibold">Media & Documents</Label>
+            <Label className="text-xs font-semibold">{t("agentPage.card.mediaAndDocs")}</Label>
             <div className="flex gap-2 flex-wrap">
               {/* Photo */}
               <Button
@@ -394,7 +487,7 @@ function VisitDetailDialog({
                 className="gap-1.5"
                 onClick={() => photo.capture(addPhoto)}
               >
-                <Camera className="h-3.5 w-3.5" /> Photo
+                <Camera className="h-3.5 w-3.5" /> {t("agentPage.card.photo")}
               </Button>
               {photo.el}
 
@@ -407,9 +500,13 @@ function VisitDetailDialog({
                 onClick={handleVoice}
               >
                 {voice.recording ? (
-                  <><Square className="h-3.5 w-3.5" /> Stop ({voice.duration}s)</>
+                  <>
+                    <Square className="h-3.5 w-3.5" /> {t("agentPage.card.stop", { duration: voice.duration })}
+                  </>
                 ) : (
-                  <><Mic className="h-3.5 w-3.5" /> Voice note</>
+                  <>
+                    <Mic className="h-3.5 w-3.5" /> {t("agentPage.card.voiceNote")}
+                  </>
                 )}
               </Button>
 
@@ -421,7 +518,7 @@ function VisitDetailDialog({
                 className="gap-1.5"
                 onClick={() => docInputRef.current?.click()}
               >
-                <FileText className="h-3.5 w-3.5" /> Document
+                <FileText className="h-3.5 w-3.5" /> {t("agentPage.card.document")}
               </Button>
               <input
                 ref={docInputRef}
@@ -439,9 +536,16 @@ function VisitDetailDialog({
             {media.length > 0 && (
               <div className="space-y-1.5 mt-2">
                 {media.map((m) => (
-                  <div key={m.id} className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2">
+                  <div
+                    key={m.id}
+                    className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2"
+                  >
                     {m.type === "photo" ? (
-                      <img src={m.url} alt="" className="h-10 w-10 rounded object-cover shrink-0" />
+                      <img
+                        src={m.url}
+                        alt=""
+                        className="h-10 w-10 rounded object-cover shrink-0"
+                      />
                     ) : m.type === "voice" ? (
                       <div className="h-10 w-10 rounded-lg bg-primary/10 grid place-items-center shrink-0">
                         <Mic className="h-4 w-4 text-primary" />
@@ -454,11 +558,19 @@ function VisitDetailDialog({
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium truncate">{m.name}</p>
                       <p className="text-[10px] text-muted-foreground">
-                        {m.type === "voice" ? `${m.duration}s` : m.size ? `${Math.round((m.size ?? 0) / 1024)}KB` : ""}
+                        {m.type === "voice"
+                          ? `${m.duration}s`
+                          : m.size
+                            ? `${Math.round((m.size ?? 0) / 1024)}KB`
+                            : ""}
                       </p>
                     </div>
                     {m.type === "voice" && (
-                      <audio src={m.url} controls className="h-8 w-24 shrink-0" />
+                      <audio
+                        src={m.url}
+                        controls
+                        className="h-8 w-24 shrink-0"
+                      />
                     )}
                     <Button
                       size="icon-xs"
@@ -475,8 +587,12 @@ function VisitDetailDialog({
         </div>
 
         <DialogFooter className="border-t pt-3 gap-2 shrink-0">
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-            Cancel
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+          >
+            {t("agentPage.actions.cancel")}
           </Button>
           {visit?.status === "CHECKED_IN" && (
             <Button
@@ -486,7 +602,7 @@ function VisitDetailDialog({
               className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
             >
               <LogOut className="h-3.5 w-3.5" />
-              {saving ? "Saving…" : "Check out & Save"}
+              {saving ? t("agentPage.actions.saving") : t("agentPage.actions.saveAndCheckOut")}
             </Button>
           )}
         </DialogFooter>
@@ -498,6 +614,7 @@ function VisitDetailDialog({
 // ─── Main AgentPage ───────────────────────────────────────────────────────────
 
 export default function AgentPage() {
+  const { t } = useTranslation();
   const user = useAppSelector((s) => s.auth.user);
   const [plans, setPlans] = useState<VisitPlan[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
@@ -525,21 +642,23 @@ export default function AgentPage() {
         setVisits(Array.isArray(data) ? data : []);
       }
     } catch {
-      toast.error("Failed to load visit plans");
+      toast.error(t("agentPage.toasts.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
-    document.title = "My Visits · VMS";
+    document.title = `${t("agentPage.title")} · VMS`;
     load();
-  }, [load]);
+  }, [load, t]);
 
-  // Get GPS position
   function getPos(): Promise<GeolocationCoordinates | null> {
     return new Promise((resolve) => {
-      if (!navigator.geolocation) { resolve(null); return; }
+      if (!navigator.geolocation) {
+        resolve(null);
+        return;
+      }
       navigator.geolocation.getCurrentPosition(
         (p) => resolve(p.coords),
         () => resolve(null),
@@ -551,12 +670,15 @@ export default function AgentPage() {
   async function handleStart(planId: string) {
     try {
       const { data } = await api.post(`/api/field/visit-plans/${planId}/start`);
-      toast.success("Visit started");
+      toast.success(t("agentPage.toasts.visitStarted"));
       const visit = data?.data?.visit ?? data?.visit;
-      if (visit) setVisits((v) => [...v.filter((x) => x.visitPlanId !== planId), visit]);
-      setPlans((p) => p.map((x) => x.id === planId ? { ...x, status: "IN_PROGRESS" } : x));
+      if (visit)
+        setVisits((v) => [...v.filter((x) => x.visitPlanId !== planId), visit]);
+      setPlans((p) =>
+        p.map((x) => (x.id === planId ? { ...x, status: "IN_PROGRESS" } : x)),
+      );
     } catch (e: any) {
-      toast.error(e?.response?.data?.error ?? "Failed to start visit");
+      toast.error(e?.response?.data?.error ?? t("agentPage.toasts.visitStartFailed"));
     }
   }
 
@@ -567,16 +689,32 @@ export default function AgentPage() {
         latitude: coords?.latitude,
         longitude: coords?.longitude,
       });
-      toast.success("Checked in");
-      setVisits((v) => v.map((x) => x.id === visitId ? { ...x, status: "CHECKED_IN", checkInAt: new Date().toISOString() } : x));
+      toast.success(t("agentPage.toasts.checkedIn"));
+      setVisits((v) =>
+        v.map((x) =>
+          x.id === visitId
+            ? {
+                ...x,
+                status: "CHECKED_IN",
+                checkInAt: new Date().toISOString(),
+              }
+            : x,
+        ),
+      );
     } catch (e: any) {
-      toast.error(e?.response?.data?.error ?? "Failed to check in");
+      toast.error(e?.response?.data?.error ?? t("agentPage.toasts.checkInFailed"));
     }
   }
 
   async function handleCheckOut(
     visit: Visit,
-    data: { orderCount: number; returnCount: number; merchandisingScore: number; notes: string; media: MediaItem[] }
+    data: {
+      orderCount: number;
+      returnCount: number;
+      merchandisingScore: number;
+      notes: string;
+      media: MediaItem[];
+    },
   ) {
     const coords = await getPos();
     try {
@@ -588,12 +726,55 @@ export default function AgentPage() {
         merchandisingScore: data.merchandisingScore,
         notes: data.notes,
       });
-      // Media is stored locally (blob URLs) — in a production setup you'd upload to S3/storage here
-      toast.success(`Visit completed — ${data.orderCount} orders, ${data.media.length} media items`);
-      setVisits((v) => v.map((x) => x.id === visit.id ? { ...x, status: "COMPLETED", checkOutAt: new Date().toISOString() } : x));
-      setPlans((p) => p.map((x) => x.id === visit.visitPlanId ? { ...x, status: "COMPLETED" } : x));
+
+      const voiceItems = data.media.filter((m) => m.type === "voice");
+      for (const item of voiceItems) {
+        try {
+          const blob = await fetch(item.url).then((r) => r.blob());
+          const file = new File([blob], item.name, { type: "audio/webm" });
+          const formData = new FormData();
+          formData.append("audio", file);
+          await api.post(`/api/agent/visits/${visit.id}/audio`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+            onUploadProgress: (e) => {
+              const pct = Math.round((e.loaded * 100) / (e.total ?? 1));
+              toast.loading(t("agentPage.card.uploadingAudio", { pct }), {
+                id: `audio-${item.id}`,
+              });
+            },
+          });
+          toast.success(t("agentPage.toasts.voiceUploaded"), { id: `audio-${item.id}` });
+        } catch {
+          toast.error(t("agentPage.toasts.voiceUploadFailed", { name: item.name }), {
+            id: `audio-${item.id}`,
+          });
+        }
+      }
+
+      toast.success(
+        t("agentPage.toasts.visitCompleted", {
+          orders: data.orderCount,
+          media: data.media.length,
+        }),
+      );
+      setVisits((v) =>
+        v.map((x) =>
+          x.id === visit.id
+            ? {
+                ...x,
+                status: "COMPLETED",
+                checkOutAt: new Date().toISOString(),
+              }
+            : x,
+        ),
+      );
+      setPlans((p) =>
+        p.map((x) =>
+          x.id === visit.visitPlanId ? { ...x, status: "COMPLETED" } : x,
+        ),
+      );
     } catch (e: any) {
-      toast.error(e?.response?.data?.error ?? "Failed to check out");
+      toast.error(e?.response?.data?.error ?? t("agentPage.toasts.checkOutFailed"));
     }
   }
 
@@ -624,27 +805,45 @@ export default function AgentPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">My Visits</h2>
+          <h2 className="text-xl font-semibold tracking-tight">{t("agentPage.title")}</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {new Date().toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+            {new Date().toLocaleDateString(undefined, {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={load} className="gap-1.5">
-          <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} /> Refresh
+          <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />{" "}
+          {t("agentPage.refresh")}
         </Button>
       </div>
 
       {/* Today's stats */}
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: "Total", value: todayStats.total, color: "" },
-          { label: "Done", value: todayStats.completed, color: "text-green-600" },
-          { label: "Active", value: todayStats.inProgress, color: "text-blue-600" },
-          { label: "Orders", value: todayStats.orders, color: "text-primary" },
+          { label: t("agentPage.stats.total"), value: todayStats.total, color: "" },
+          {
+            label: t("agentPage.stats.done"),
+            value: todayStats.completed,
+            color: "text-green-600",
+          },
+          {
+            label: t("agentPage.stats.active"),
+            value: todayStats.inProgress,
+            color: "text-blue-600",
+          },
+          { label: t("agentPage.stats.orders"), value: todayStats.orders, color: "text-primary" },
         ].map((s) => (
           <Card key={s.label} className="p-3">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{s.label}</p>
-            <p className={cn("text-2xl font-bold mt-0.5", s.color)}>{s.value}</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+              {s.label}
+            </p>
+            <p className={cn("text-2xl font-bold mt-0.5", s.color)}>
+              {s.value}
+            </p>
           </Card>
         ))}
       </div>
@@ -653,23 +852,28 @@ export default function AgentPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="today">
-            Today
+            {t("agentPage.tabs.today")}
             {todayPlans.length > 0 && (
-              <Badge variant="secondary" className="ml-1.5 text-[10px]">{todayPlans.length}</Badge>
+              <Badge variant="secondary" className="ml-1.5 text-[10px]">
+                {todayPlans.length}
+              </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-          <TabsTrigger value="done">Completed</TabsTrigger>
+          <TabsTrigger value="upcoming">{t("agentPage.tabs.upcoming")}</TabsTrigger>
+          <TabsTrigger value="done">{t("agentPage.tabs.completed")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="today" className="mt-4 space-y-3">
           {loading ? (
             [...Array(3)].map((_, i) => (
-              <div key={i} className="h-24 rounded-xl bg-muted/40 animate-pulse" />
+              <div
+                key={i}
+                className="h-24 rounded-xl bg-muted/40 animate-pulse"
+              />
             ))
           ) : todayPlans.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-              No visits planned for today
+              {t("agentPage.empty.today")}
             </div>
           ) : (
             todayPlans
@@ -699,7 +903,7 @@ export default function AgentPage() {
         <TabsContent value="upcoming" className="mt-4 space-y-3">
           {upcomingPlans.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-              No upcoming visits
+              {t("agentPage.empty.upcoming")}
             </div>
           ) : (
             upcomingPlans.map((plan) => (
@@ -722,7 +926,7 @@ export default function AgentPage() {
         <TabsContent value="done" className="mt-4 space-y-3">
           {completedPlans.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-              No completed visits
+              {t("agentPage.empty.completed")}
             </div>
           ) : (
             completedPlans.map((plan) => {
@@ -734,8 +938,11 @@ export default function AgentPage() {
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm">{plan.shop.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {v?.checkOutAt ? new Date(v.checkOutAt).toLocaleString() : new Date(plan.plannedDate).toLocaleDateString()}
-                        {v && ` · ${v.orderCount ?? 0} orders · Score: ${v.merchandisingScore ?? "—"}`}
+                        {v?.checkOutAt
+                          ? new Date(v.checkOutAt).toLocaleString()
+                          : new Date(plan.plannedDate).toLocaleDateString()}
+                        {v &&
+                          ` · ${v.orderCount ?? 0} ${t("agentPage.stats.orders").toLowerCase()} · ${t("agentPage.card.score")}: ${v.merchandisingScore ?? "—"}`}
                       </p>
                     </div>
                   </CardContent>

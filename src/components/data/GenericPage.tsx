@@ -3,7 +3,9 @@ import { api } from "@/lib/api";
 import { DataPageScaffold, type Column } from "@/components/data/EditableTable";
 import { type CreateDialogConfig } from "@/components/data/CreateDialog";
 
-type Loader = () => Promise<Array<Record<string, unknown> & { id: string | number }>>;
+type Loader = () => Promise<
+  Array<Record<string, unknown> & { id: string | number }>
+>;
 
 export function makeListLoader(path: string): Loader {
   return async () => {
@@ -45,9 +47,16 @@ export function GenericPage(props: {
   columns: Column<Record<string, unknown> & { id: string | number }>[];
   deletable?: boolean;
   createConfig?: CreateDialogConfig;
+  /**
+   * If provided, shows an Export button that downloads this URL as .xlsx.
+   * Example: "/api/purchase-orders/export"
+   */
+  exportUrl?: string;
 }) {
   const [loaderKey] = useState(() => props.path);
-  useEffect(() => { document.title = `${props.title} · VMS`; }, [props.title]);
+  useEffect(() => {
+    document.title = `${props.title} · VMS`;
+  }, [props.title]);
   return (
     <DataPageScaffold
       title={props.title}
@@ -55,8 +64,11 @@ export function GenericPage(props: {
       fetcher={makeListLoader(loaderKey)}
       columns={props.columns}
       saveEndpoint={makePatcher(loaderKey)}
-      deleteEndpoint={props.deletable !== false ? makeDeleter(loaderKey) : undefined}
+      deleteEndpoint={
+        props.deletable !== false ? makeDeleter(loaderKey) : undefined
+      }
       createConfig={props.createConfig}
+      exportUrl={props.exportUrl}
     />
   );
 }

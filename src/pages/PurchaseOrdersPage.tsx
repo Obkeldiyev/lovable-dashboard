@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { GenericPage } from "@/components/data/GenericPage";
 
 // Backend: createPurchaseOrder({
@@ -5,36 +6,104 @@ import { GenericPage } from "@/components/data/GenericPage";
 //   items*: [{ productId*, qty*, unitCost*, taxRate?, notes? }]
 // })
 export default function PurchaseOrdersPage() {
+  const { t } = useTranslation();
+
   return (
     <GenericPage
-      title="Purchase Orders"
-      description="Procurement purchase orders"
+      title={t("purchaseOrders.title")}
+      description={t("purchaseOrders.description")}
       path="/api/purchase-orders"
+      exportUrl="/api/purchase-orders/export"
       deletable={false}
       columns={[
-        { key: "poNumber",   label: "PO Number" },
-        { key: "supplier",   label: "Supplier",  render: (v: any) => v?.name ?? "—" },
-        { key: "status",     label: "Status",    type: "badge" },
-        { key: "expectedAt", label: "Expected",  render: (v: any) => v ? new Date(v).toLocaleDateString() : "—" },
-        { key: "createdAt",  label: "Created",   render: (v: any) => v ? new Date(v).toLocaleDateString() : "—" },
+        { key: "poNumber", label: t("purchaseOrders.columns.poNumber") },
+        {
+          key: "supplier",
+          label: t("purchaseOrders.columns.supplier"),
+          render: (v: any) => v?.name ?? "—",
+        },
+        {
+          key: "status",
+          label: t("purchaseOrders.columns.status"),
+          type: "badge",
+        },
+        {
+          key: "expectedAt",
+          label: t("purchaseOrders.columns.expected"),
+          render: (v: any) => (v ? new Date(v).toLocaleDateString() : "—"),
+        },
+        {
+          key: "createdAt",
+          label: t("purchaseOrders.columns.created"),
+          render: (v: any) => (v ? new Date(v).toLocaleDateString() : "—"),
+        },
       ]}
       createConfig={{
-        title: "Purchase Order",
+        title: t("purchaseOrders.create.title"),
         postUrl: "/api/purchase-orders",
         fields: [
-          { key: "poNumber",   label: "PO Number",       required: true, placeholder: "e.g. PO-2024-001" },
-          { key: "supplierId", label: "Supplier ID",      required: true, type: "uuid", placeholder: "Paste supplier UUID" },
-          { key: "expectedAt", label: "Expected Delivery", type: "date" },
+          {
+            key: "poNumber",
+            label: t("purchaseOrders.create.poNumber"),
+            required: true,
+            placeholder: t("purchaseOrders.create.poNumberPlaceholder"),
+          },
+          {
+            key: "supplierId",
+            label: t("purchaseOrders.create.supplier"),
+            required: true,
+            type: "fetchselect",
+            fetchUrl: "/api/suppliers",
+            labelKey: "name",
+            searchKeys: ["code"],
+            placeholder: t("purchaseOrders.create.supplierPlaceholder"),
+          },
+          {
+            key: "expectedAt",
+            label: t("purchaseOrders.create.expectedDelivery"),
+            type: "date",
+          },
           {
             key: "items",
-            label: "Line Items",
+            label: t("purchaseOrders.create.lineItems"),
             type: "items",
             required: true,
             columns: [
-              { key: "productId", label: "Product ID", type: "uuid",   placeholder: "Product UUID" },
-              { key: "qty",       label: "Qty",        type: "number", placeholder: "1" },
-              { key: "unitCost",  label: "Unit Cost",  type: "number", placeholder: "0.00" },
-              { key: "taxRate",   label: "Tax %",      type: "number", placeholder: "0" },
+              {
+                key: "productId",
+                label: t("purchaseOrders.create.itemsColumns.product"),
+                type: "fetchselect",
+                fetchUrl: "/api/products",
+                labelKey: "name",
+                searchKeys: ["sku"],
+                placeholder: t(
+                  "purchaseOrders.create.itemsColumns.productPlaceholder",
+                ),
+              },
+              {
+                key: "qty",
+                label: t("purchaseOrders.create.itemsColumns.qty"),
+                type: "number",
+                placeholder: t(
+                  "purchaseOrders.create.itemsColumns.qtyPlaceholder",
+                ),
+              },
+              {
+                key: "unitCost",
+                label: t("purchaseOrders.create.itemsColumns.unitCost"),
+                type: "number",
+                placeholder: t(
+                  "purchaseOrders.create.itemsColumns.unitCostPlaceholder",
+                ),
+              },
+              {
+                key: "taxRate",
+                label: t("purchaseOrders.create.itemsColumns.taxRate"),
+                type: "number",
+                placeholder: t(
+                  "purchaseOrders.create.itemsColumns.taxRatePlaceholder",
+                ),
+              },
             ],
           },
         ],

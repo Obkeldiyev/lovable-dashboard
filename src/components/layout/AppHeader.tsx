@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLocation, NavLink, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Bell, Search, Globe, LogOut, Settings, ChevronDown } from "lucide-react";
@@ -11,6 +12,7 @@ import {
   DropdownMenuSeparator, DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { CommandSearch } from "./CommandSearch";
 import { NAV } from "./AppSidebar";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { logout } from "@/store/authSlice";
@@ -24,6 +26,7 @@ export function AppHeader() {
   const navigate = useNavigate();
   const user = useAppSelector((s) => s.auth.user);
   const prefs = useAppSelector((s) => s.preferences);
+  const [commandOpen, setCommandOpen] = useState(false);
 
   const current = NAV.find((n) => pathname === n.url || (n.url !== "/dashboard" && pathname.startsWith(n.url)));
   const title = current ? t(`nav.${current.key}`) : t("nav.dashboard");
@@ -56,10 +59,17 @@ export function AppHeader() {
         <div className="relative hidden md:block">
           <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           <Input
+            readOnly
+            onClick={() => setCommandOpen(true)}
             placeholder={t("common.search", "Search…")}
-            className="h-8 w-44 lg:w-52 bg-muted/50 pl-8 text-sm focus:bg-background transition-colors"
+            className="h-8 w-44 lg:w-52 bg-muted/50 pl-8 pr-10 text-sm focus:bg-background transition-colors cursor-pointer"
           />
+          <kbd className="pointer-events-none absolute right-2 top-1.5 hidden select-none items-center gap-1 rounded border border-border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground lg:inline-flex">
+            ⌘K
+          </kbd>
         </div>
+
+        <CommandSearch open={commandOpen} onOpenChange={setCommandOpen} />
 
         {/* Language */}
         <DropdownMenu>

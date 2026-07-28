@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,12 +14,14 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { UuidCell } from "@/components/ui/uuid-cell";
 
 const STATUS_STEPS: Delivery["status"][] = [
   "ASSIGNED", "PICKED_UP", "IN_TRANSIT", "ARRIVED", "DELIVERED",
 ];
 
 export default function DriverNavigatePage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const [delivery, setDelivery] = useState<Delivery | null>(null);
   const [info, setInfo] = useState<{ distanceKm: number; durationMin: number } | null>(null);
@@ -50,17 +53,21 @@ export default function DriverNavigatePage() {
   useEffect(() => {
     if (!id) return;
     deliveriesApi.get(id).then(setDelivery).catch(() => {});
-    document.title = "Navigate · VMS";
-  }, [id]);
+    document.title = `${t("driverNavigatePage.title")} · VMS`;
+  }, [id, t]);
 
   async function setStatus(s: Delivery["status"]) {
     if (!id) return;
     try {
       const updated = await deliveriesApi.setStatus(id, s);
       setDelivery((p) => ({ ...(p ?? updated), status: updated.status }));
-      toast.success(`Status: ${s.replace(/_/g, " ").toLowerCase()}`);
+      toast.success(
+        t("driverNavigatePage.statusUpdated", {
+          status: t(`driverNavigatePage.steps.${s}`, s.replace(/_/g, " ").toLowerCase()),
+        })
+      );
     } catch (e: any) {
-      toast.error(e?.response?.data?.error ?? "Failed to update status");
+      toast.error(e?.response?.data?.error ?? t("driverNavigatePage.statusFailed"));
     }
   }
 
@@ -78,12 +85,18 @@ export default function DriverNavigatePage() {
   const route = pos && destLatLng ? { from: pos, to: destLatLng } : null;
 
   const markers: MapMarker[] = [
-    ...(pos ? [{ id: "me", lat: pos.lat, lng: pos.lng, label: "You", color: "#1d4ed8", live: true }] : []),
-    ...(destLatLng ? [{ id: "dest", lat: destLatLng.lat, lng: destLatLng.lng, label: "Drop-off", color: "#ef4444" }] : []),
+    ...(pos
+      ? [{ id: "me", lat: pos.lat, lng: pos.lng, label: t("driverNavigatePage.markers.me"), color: "#1d4ed8", live: true }]
+      : []),
+    ...(destLatLng
+      ? [{ id: "dest", lat: destLatLng.lat, lng: destLatLng.lng, label: t("driverNavigatePage.markers.dest"), color: "#ef4444" }]
+      : []),
     ...stops.slice(0, -1).map((s: any, i: number) => {
       const lat = Number(s.latitude ?? s.lat ?? 0);
       const lng = Number(s.longitude ?? s.lng ?? 0);
-      return lat && lng ? { id: `stop-${i}`, lat, lng, label: `Stop ${i + 1}`, color: "#f59e0b" } : null;
+      return lat && lng
+        ? { id: `stop-${i}`, lat, lng, label: t("driverNavigatePage.markers.stop", { number: i + 1 }), color: "#f59e0b" }
+        : null;
     }).filter(Boolean) as MapMarker[],
   ];
 
@@ -93,21 +106,23 @@ export default function DriverNavigatePage() {
     return (
       <div className="space-y-4">
         <Button variant="ghost" size="sm" asChild>
-          <Link to="/driver"><ArrowLeft className="h-4 w-4 mr-1" /> Back</Link>
+          <Link to="/driver">
+            <ArrowLeft className="h-4 w-4 mr-1" /> {t("driverNavigatePage.back")}
+          </Link>
         </Button>
         <Card className="border-amber-500/40 bg-amber-500/5">
           <CardContent className="p-6 space-y-4">
             <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
               <div>
-                <p className="font-semibold">GPS required for navigation</p>
+                <p className="font-semibold">{t("driverNavigatePage.gpsDisabled.title")}</p>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                  Enable GPS to receive your live location and start navigating.
+                  {t("driverNavigatePage.gpsDisabled.description")}
                 </p>
               </div>
             </div>
             <Button onClick={() => setSettings({ ...settings, gpsEnabled: true })} className="gap-2">
-              <Locate className="h-4 w-4" /> Enable GPS
+              <Locate className="h-4 w-4" /> {t("driverNavigatePage.gpsDisabled.enable")}
             </Button>
           </CardContent>
         </Card>
@@ -120,22 +135,30 @@ export default function DriverNavigatePage() {
       {/* Header */}
       <div className="flex items-center justify-between shrink-0">
         <Button variant="ghost" size="sm" asChild>
-          <Link to="/driver"><ArrowLeft className="h-4 w-4 mr-1" /> Back</Link>
+          <Link to="/driver">
+            <ArrowLeft className="h-4 w-4 mr-1" /> {t("driverNavigatePage.back")}
+          </Link>
         </Button>
         <div className="flex items-center gap-2">
           <Truck className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">{delivery?.id?.slice(0, 8) ?? "Loading…"}</span>
+          {delivery?.id ? (
+            <UuidCell value={delivery.id} />
+          ) : (
+            <span className="text-sm font-medium">{t("driverNavigatePage.loading")}</span>
+          )}
           {delivery?.status && (
-            <Badge variant="outline" className="text-xs">{delivery.status.replace(/_/g, " ")}</Badge>
+            <Badge variant="outline" className="text-xs">
+              {t(`driverNavigatePage.steps.${delivery.status}`, delivery.status.replace(/_/g, " "))}
+            </Badge>
           )}
         </div>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           {uploading ? (
-            <><Wifi className="h-3.5 w-3.5 text-primary animate-pulse" /> Sending…</>
+            <><Wifi className="h-3.5 w-3.5 text-primary animate-pulse" /> {t("driverNavigatePage.statusIndicator.sending")}</>
           ) : gps.status === "active" ? (
-            <><Wifi className="h-3.5 w-3.5 text-green-500" /> GPS active</>
+            <><Wifi className="h-3.5 w-3.5 text-green-500" /> {t("driverNavigatePage.statusIndicator.active")}</>
           ) : (
-            <><WifiOff className="h-3.5 w-3.5" /> No GPS</>
+            <><WifiOff className="h-3.5 w-3.5" /> {t("driverNavigatePage.statusIndicator.inactive")}</>
           )}
         </div>
       </div>
@@ -144,7 +167,7 @@ export default function DriverNavigatePage() {
       {gps.status === "denied" && (
         <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm shrink-0">
           <AlertCircle className="h-4 w-4 text-destructive inline mr-2" />
-          GPS denied: {gps.reason}. Enable location in browser settings.
+          {t("driverNavigatePage.gpsDenied", { reason: gps.reason })}
         </div>
       )}
 
@@ -159,7 +182,7 @@ export default function DriverNavigatePage() {
                 i === currentStepIdx ? "bg-primary text-primary-foreground" :
                 "bg-muted text-muted-foreground",
               )}>
-                {step.replace(/_/g, " ")}
+                {t(`driverNavigatePage.steps.${step}`, step.replace(/_/g, " "))}
               </div>
               {i < STATUS_STEPS.length - 1 && (
                 <div className={cn("h-px w-4 shrink-0", i < currentStepIdx ? "bg-green-400" : "bg-border")} />
@@ -187,9 +210,25 @@ export default function DriverNavigatePage() {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-2 shrink-0">
-        <StatCard icon={<Navigation className="h-4 w-4" />} label="Distance" value={info ? `${info.distanceKm} ${settings.units}` : "—"} />
-        <StatCard icon={<Clock className="h-4 w-4" />} label="ETA" value={info ? `${info.durationMin} min` : "—"} />
-        <StatCard icon={<Gauge className="h-4 w-4" />} label="Speed" value={gps.status === "active" && gps.coords.speedKmh ? `${Math.round(gps.coords.speedKmh)} km/h` : "—"} />
+        <StatCard
+          icon={<Navigation className="h-4 w-4" />}
+          label={t("driverNavigatePage.stats.distance")}
+          value={info ? `${info.distanceKm} ${settings.units}` : "—"}
+        />
+        <StatCard
+          icon={<Clock className="h-4 w-4" />}
+          label={t("driverNavigatePage.stats.eta")}
+          value={info ? t("driverNavigatePage.stats.minutes", { count: info.durationMin }) : "—"}
+        />
+        <StatCard
+          icon={<Gauge className="h-4 w-4" />}
+          label={t("driverNavigatePage.stats.speed")}
+          value={
+            gps.status === "active" && gps.coords.speedKmh
+              ? t("driverNavigatePage.stats.speedUnit", { speed: Math.round(gps.coords.speedKmh) })
+              : "—"
+          }
+        />
       </div>
 
       {/* Action buttons */}
@@ -200,7 +239,7 @@ export default function DriverNavigatePage() {
           disabled={delivery?.status === "PICKED_UP" || delivery?.status === "IN_TRANSIT"}
           className="gap-1.5 text-xs"
         >
-          <MapPin className="h-3.5 w-3.5" /> Picked up
+          <MapPin className="h-3.5 w-3.5" /> {t("driverNavigatePage.actions.pickedUp")}
         </Button>
         <Button
           variant="outline"
@@ -208,14 +247,14 @@ export default function DriverNavigatePage() {
           disabled={delivery?.status === "IN_TRANSIT"}
           className="gap-1.5 text-xs"
         >
-          <Navigation className="h-3.5 w-3.5" /> In transit
+          <Navigation className="h-3.5 w-3.5" /> {t("driverNavigatePage.actions.inTransit")}
         </Button>
         <Button
           onClick={() => setStatus("DELIVERED")}
           disabled={delivery?.status === "DELIVERED"}
           className="gap-1.5 text-xs bg-green-600 hover:bg-green-700 text-white"
         >
-          <CheckCircle2 className="h-3.5 w-3.5" /> Delivered
+          <CheckCircle2 className="h-3.5 w-3.5" /> {t("driverNavigatePage.actions.delivered")}
         </Button>
       </div>
     </div>

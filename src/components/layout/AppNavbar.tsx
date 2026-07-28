@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Bell, Globe, Search, LogOut, User, Settings, ChevronDown } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -28,6 +29,7 @@ import { logout } from "@/store/authSlice";
 import { authApi } from "@/features/auth/api";
 import { cn } from "@/lib/utils";
 import { canSeeNav } from "@/lib/navPermissions";
+import { CommandSearch } from "./CommandSearch";
 
 type NavItem = {
   key: string;
@@ -99,6 +101,7 @@ export function AppNavbar() {
   const navigate = useNavigate();
   const user = useAppSelector((s) => s.auth.user);
   const role = user?.role;
+  const [commandOpen, setCommandOpen] = useState(false);
 
   const initials = user?.name
     ? user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
@@ -194,10 +197,17 @@ export function AppNavbar() {
         <div className="relative hidden md:block">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
+            readOnly
+            onClick={() => setCommandOpen(true)}
             placeholder={t("common.search", "Search…")}
-            className="h-9 w-48 lg:w-56 bg-muted/50 pl-8 focus:bg-background transition-colors"
+            className="h-9 w-48 lg:w-56 bg-muted/50 pl-8 pr-10 focus:bg-background transition-colors cursor-pointer"
           />
+          <kbd className="pointer-events-none absolute right-2 top-2 hidden select-none items-center gap-1 rounded border border-border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground lg:inline-flex">
+            ⌘K
+          </kbd>
         </div>
+
+        <CommandSearch open={commandOpen} onOpenChange={setCommandOpen} />
 
         {/* Language */}
         <DropdownMenu>

@@ -1,10 +1,23 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 
-// In production: VITE_API_BASE_URL is empty → same-origin, Nginx routes /api/* → backend :9300
-// In development: VITE_API_BASE_URL=http://localhost:9300 (set in .env)
 const BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
-  "";
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
+
+// TypeScript: window.__REDUX_STORE__ declaration
+declare global {
+  interface Window {
+    __REDUX_STORE__?: {
+      getState: () => {
+        auth: {
+          user: {
+            role?: string;
+            brandId?: string;
+          } | null;
+        };
+      };
+    };
+  }
+}
 
 export const api = axios.create({
   baseURL: BASE_URL,
@@ -38,11 +51,37 @@ export const tokenStore = {
   },
 };
 
+// Helper: komponetlarda brand filter uchun ishlatiladi
+// Misol: api.get('/api/brands', { params: { ...getBrandFilter() } })
+export function getBrandFilter(): { brandId?: string } {
+  const user = window.__REDUX_STORE__?.getState()?.auth?.user;
+  if (!user) return {};
+  const { role, brandId } = user;
+  if (brandId && (role === "AGENT" || role === "MANAGER")) {
+    return { brandId };
+  }
+  return {};
+}
+
+// Helper: bu rol uchun brand filter kerakmi?
+export function isBrandRestricted(): boolean {
+  const user = window.__REDUX_STORE__?.getState()?.auth?.user;
+  if (!user) return false;
+  return ["AGENT", "MANAGER"].includes(user.role ?? "");
+}
+
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = tokenStore.access;
   const tenant = tokenStore.tenant;
   if (token) config.headers.set("Authorization", `Bearer ${token}`);
   if (tenant) config.headers.set("X-Tenant-Id", tenant);
+
+  // Backend ga X-Brand-Id header yuborish
+  const user = window.__REDUX_STORE__?.getState()?.auth?.user;
+  if (user?.brandId && (user.role === "AGENT" || user.role === "MANAGER")) {
+    config.headers.set("X-Brand-Id", user.brandId);
+  }
+
   return config;
 });
 
@@ -52,7 +91,6 @@ async function refreshToken(): Promise<string | null> {
   const r = tokenStore.refresh;
   if (!r) return null;
   try {
-    // Backend uses /api/auth/refresh-token
     const res = await axios.post(`${BASE_URL}/api/auth/refresh-token`, {
       refreshToken: r,
     });
