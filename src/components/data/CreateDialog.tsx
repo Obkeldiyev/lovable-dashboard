@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { FetchCombobox } from "@/components/ui/fetch-combobox";
 import { Plus, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 // ─── Field type definitions ───────────────────────────────────────────────────
 
@@ -162,6 +163,7 @@ function ScalarField({
   /** Full form values — needed by dependentfetchselect to read its parent field */
   values: Record<string, string>;
 }) {
+  const { t } = useTranslation();
   if (f.type === "fetchselect") {
     const ff = f as FetchSelectFieldDef;
     return (
@@ -170,7 +172,7 @@ function ScalarField({
         labelKey={ff.labelKey}
         valueKey={ff.valueKey}
         searchKeys={ff.searchKeys}
-        placeholder={ff.placeholder ?? `Select ${ff.label.toLowerCase()}…`}
+        placeholder={ff.placeholder ?? t("createDialog.selectPlaceholder",{label: ff.label.toLowerCase()})}
         value={value}
         onValueChange={onChange}
       />
@@ -189,7 +191,7 @@ function ScalarField({
           disabled
           className="w-full justify-start font-normal h-9 text-sm text-muted-foreground"
         >
-          {df.placeholderBeforeParent ?? "Select the field above first…"}
+          {df.placeholderBeforeParent ?? t("createDialog.selectParentFirst")}
         </Button>
       );
     }
@@ -229,7 +231,7 @@ function ScalarField({
     return (
       <Textarea
         id={f.key}
-        placeholder={(f as TextareaFieldDef).placeholder ?? `Enter ${f.label.toLowerCase()}…`}
+        placeholder={(f as TextareaFieldDef).placeholder ?? t("createDialog.inputPlaceholder", {label: f.label.toLowerCase()})}
         rows={2}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -243,7 +245,7 @@ function ScalarField({
     <Input
       id={f.key}
       type={(f as ScalarFieldDef).type === "uuid" ? "text" : ((f as ScalarFieldDef).type ?? "text")}
-      placeholder={(f as ScalarFieldDef).placeholder ?? `Enter ${f.label.toLowerCase()}…`}
+      placeholder={(f as ScalarFieldDef).placeholder ?? t("createDialog.inputPlaceholder", {label: f.label.toLowerCase()})}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       className="h-9 text-sm"
@@ -312,6 +314,7 @@ export function CreateDialog({ open, onOpenChange, config, onCreated }: Props) {
   const [values, setValues] = useState<Record<string, string>>({});
   const [itemsMap, setItemsMap] = useState<Record<string, Record<string, string>[]>>({});
   const [saving, setSaving] = useState(false);
+  const { t } = useTranslation();
 
   const itemFields = config.fields.filter((f): f is ItemsFieldDef => f.type === "items");
   const scalarFields = config.fields.filter(
@@ -377,7 +380,7 @@ export function CreateDialog({ open, onOpenChange, config, onCreated }: Props) {
     // Validate required scalar fields
     for (const f of scalarFields) {
       if (f.required && !values[f.key]?.trim()) {
-        toast.error(`${f.label} is required`);
+        toast.error(t("createDialog.requiredField",{label: f.label}));
         return;
       }
     }
@@ -388,7 +391,7 @@ export function CreateDialog({ open, onOpenChange, config, onCreated }: Props) {
       if (f.required) {
         const hasData = rows.some((r) => Object.values(r).some((v) => v.trim() !== ""));
         if (!hasData) {
-          toast.error(`At least one ${f.label} row is required`);
+          toast.error(t("createDialog.requiredRow",{label: f.label}));
           return;
         }
       }
@@ -429,12 +432,12 @@ export function CreateDialog({ open, onOpenChange, config, onCreated }: Props) {
     try {
       const { data } = await api.post(config.postUrl, body);
       const record = data?.data ?? data;
-      toast.success(`${config.title} created`);
+      toast.success(t("createDialog.createdSuccess", { title: config.title }));
       onCreated(record);
       reset();
       onOpenChange(false);
     } catch (err: any) {
-      const msg = err?.response?.data?.error ?? `Failed to create ${config.title}`;
+      const msg = err?.response?.data?.error ?? t("createDialog.createFailed", { title: config.title });
       toast.error(msg);
     } finally {
       setSaving(false);
@@ -453,7 +456,7 @@ export function CreateDialog({ open, onOpenChange, config, onCreated }: Props) {
     >
       <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>New {config.title}</DialogTitle>
+          <DialogTitle>{t("createdDialog.newRecord",{label: config.title})}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-0 min-h-0">
@@ -492,7 +495,7 @@ export function CreateDialog({ open, onOpenChange, config, onCreated }: Props) {
                       variant="outline"
                       onClick={() => addRow(f.key, f.columns)}
                     >
-                      <Plus className="h-3 w-3 mr-1" /> Add row
+                      <Plus className="h-3 w-3 mr-1" /> {t("createDialog.addRow")}
                     </Button>
                   </div>
 
@@ -554,10 +557,10 @@ export function CreateDialog({ open, onOpenChange, config, onCreated }: Props) {
                 reset();
               }}
             >
-              Cancel
+              {t("createDialog.cancel")}
             </Button>
             <Button type="submit" size="sm" disabled={saving}>
-              {saving ? "Creating…" : `Create ${config.title}`}
+              {saving ? t("createDialog.creating") : `Create ${config.title}`}
             </Button>
           </DialogFooter>
         </form>
