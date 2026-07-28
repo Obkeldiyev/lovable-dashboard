@@ -1,20 +1,14 @@
 /**
  * AgentPage — Field agent visit management.
- *
- * Features:
- * - View today's visit plans (assigned to current user)
- * - Check in / check out with GPS coordinates
- * - Take photos, record voice notes, attach documents
- * - Log orders placed, returns, merchandising score
- * - View visit history per shop
- * - Custom pricing per shop (price list)
+ * Fully internationalized with react-i18next.
  */
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next"; // 1. Import qo'shildi
 import { api } from "@/lib/api";
 import { useAppSelector } from "@/store";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,10 +30,8 @@ import {
   LogOut,
   Camera,
   Mic,
-  MicOff,
   FileText,
   RefreshCw,
-  Clock,
   ShoppingBag,
   RotateCcw,
   Star,
@@ -47,8 +39,6 @@ import {
   X,
   Play,
   Square,
-  Download,
-  Upload,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -87,10 +77,10 @@ type Visit = {
 type MediaItem = {
   id: string;
   type: "photo" | "voice" | "document";
-  url: string; // local blob URL
+  url: string;
   name: string;
   size?: number;
-  duration?: number; // seconds, for voice
+  duration?: number;
   createdAt: string;
 };
 
@@ -119,6 +109,7 @@ function usePhotoCapture() {
 }
 
 function useVoiceRecorder() {
+  const { t } = useTranslation();
   const [recording, setRecording] = useState(false);
   const [duration, setDuration] = useState(0);
   const mediaRef = useRef<MediaRecorder | null>(null);
@@ -137,7 +128,7 @@ function useVoiceRecorder() {
       setDuration(0);
       timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
     } catch {
-      toast.error("Microphone access denied");
+      toast.error(t("agentPage.toasts.micDenied"));
     }
   }
 
@@ -182,6 +173,8 @@ function VisitCard({
   onCheckOut: (visit: Visit) => void;
   onOpenDetail: (plan: VisitPlan, visit?: Visit) => void;
 }) {
+  const { t } = useTranslation();
+
   const statusColor =
     {
       PLANNED: "bg-muted text-muted-foreground",
@@ -220,7 +213,7 @@ function VisitCard({
                   statusColor,
                 )}
               >
-                {plan.status}
+                {t(`agentPage.status.${plan.status}`, { defaultValue: plan.status })}
               </span>
             </div>
             {plan.shop.address && (
@@ -242,7 +235,7 @@ function VisitCard({
                   onClick={() => onStart(plan.id)}
                   className="gap-1"
                 >
-                  <Play className="h-3 w-3" /> Start visit
+                  <Play className="h-3 w-3" /> {t("agentPage.actions.startVisit")}
                 </Button>
               )}
               {activeVisit && activeVisit.status === "PLANNED" && (
@@ -251,7 +244,7 @@ function VisitCard({
                   onClick={() => onCheckIn(activeVisit.id)}
                   className="gap-1"
                 >
-                  <LogIn className="h-3 w-3" /> Check in
+                  <LogIn className="h-3 w-3" /> {t("agentPage.actions.checkIn")}
                 </Button>
               )}
               {activeVisit && activeVisit.status === "CHECKED_IN" && (
@@ -261,7 +254,7 @@ function VisitCard({
                   onClick={() => onCheckOut(activeVisit)}
                   className="gap-1"
                 >
-                  <LogOut className="h-3 w-3" /> Check out
+                  <LogOut className="h-3 w-3" /> {t("agentPage.actions.checkOut")}
                 </Button>
               )}
               <Button
@@ -270,7 +263,7 @@ function VisitCard({
                 onClick={() => onOpenDetail(plan, activeVisit)}
                 className="gap-1 ml-auto"
               >
-                Details <ChevronRight className="h-3 w-3" />
+                {t("agentPage.actions.details")} <ChevronRight className="h-3 w-3" />
               </Button>
             </div>
           </div>
@@ -301,6 +294,7 @@ function VisitDetailDialog({
     media: MediaItem[];
   }) => void;
 }) {
+  const { t } = useTranslation();
   const [orderCount, setOrderCount] = useState(0);
   const [returnCount, setReturnCount] = useState(0);
   const [score, setScore] = useState(5);
@@ -334,7 +328,7 @@ function VisitDetailDialog({
         createdAt: new Date().toISOString(),
       },
     ]);
-    toast.success("Photo added");
+    toast.success(t("agentPage.toasts.photoAdded"));
   }
 
   async function handleVoice() {
@@ -353,7 +347,7 @@ function VisitDetailDialog({
             createdAt: new Date().toISOString(),
           },
         ]);
-        toast.success(`Voice note saved (${voice.duration}s)`);
+        toast.success(t("agentPage.toasts.voiceSaved", { duration: voice.duration }));
       }
     } else {
       voice.start();
@@ -373,7 +367,7 @@ function VisitDetailDialog({
         createdAt: new Date().toISOString(),
       },
     ]);
-    toast.success("Document attached");
+    toast.success(t("agentPage.toasts.docAttached"));
   }
 
   function removeMedia(id: string) {
@@ -404,7 +398,7 @@ function VisitDetailDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MapPin className="h-4 w-4 text-primary" />
-            {plan?.shop.name ?? "Visit"}
+            {plan?.shop.name ?? t("agentPage.card.visit")}
           </DialogTitle>
         </DialogHeader>
 
@@ -415,11 +409,11 @@ function VisitDetailDialog({
               {visit.checkInAt && (
                 <span className="flex items-center gap-1">
                   <LogIn className="h-3.5 w-3.5" />
-                  In: {new Date(visit.checkInAt).toLocaleTimeString()}
+                  {t("agentPage.card.in", { time: new Date(visit.checkInAt).toLocaleTimeString() })}
                 </span>
               )}
               <Badge variant="outline" className="text-[10px]">
-                {visit.status}
+                {t(`agentPage.status.${visit.status}`, { defaultValue: visit.status })}
               </Badge>
             </div>
           )}
@@ -428,7 +422,7 @@ function VisitDetailDialog({
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs flex items-center gap-1">
-                <ShoppingBag className="h-3 w-3" /> Orders
+                <ShoppingBag className="h-3 w-3" /> {t("agentPage.card.orders")}
               </Label>
               <Input
                 type="number"
@@ -440,7 +434,7 @@ function VisitDetailDialog({
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs flex items-center gap-1">
-                <RotateCcw className="h-3 w-3" /> Returns
+                <RotateCcw className="h-3 w-3" /> {t("agentPage.card.returns")}
               </Label>
               <Input
                 type="number"
@@ -452,7 +446,7 @@ function VisitDetailDialog({
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs flex items-center gap-1">
-                <Star className="h-3 w-3" /> Score (1-10)
+                <Star className="h-3 w-3" /> {t("agentPage.card.score")}
               </Label>
               <Input
                 type="number"
@@ -469,10 +463,10 @@ function VisitDetailDialog({
 
           {/* Notes */}
           <div className="space-y-1.5">
-            <Label className="text-xs">Notes</Label>
+            <Label className="text-xs">{t("agentPage.card.notes")}</Label>
             <Textarea
               rows={3}
-              placeholder="Visit notes, observations…"
+              placeholder={t("agentPage.card.notesPlaceholder")}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="resize-none text-sm"
@@ -483,7 +477,7 @@ function VisitDetailDialog({
 
           {/* Media capture */}
           <div className="space-y-2">
-            <Label className="text-xs font-semibold">Media & Documents</Label>
+            <Label className="text-xs font-semibold">{t("agentPage.card.mediaAndDocs")}</Label>
             <div className="flex gap-2 flex-wrap">
               {/* Photo */}
               <Button
@@ -493,7 +487,7 @@ function VisitDetailDialog({
                 className="gap-1.5"
                 onClick={() => photo.capture(addPhoto)}
               >
-                <Camera className="h-3.5 w-3.5" /> Photo
+                <Camera className="h-3.5 w-3.5" /> {t("agentPage.card.photo")}
               </Button>
               {photo.el}
 
@@ -507,11 +501,11 @@ function VisitDetailDialog({
               >
                 {voice.recording ? (
                   <>
-                    <Square className="h-3.5 w-3.5" /> Stop ({voice.duration}s)
+                    <Square className="h-3.5 w-3.5" /> {t("agentPage.card.stop", { duration: voice.duration })}
                   </>
                 ) : (
                   <>
-                    <Mic className="h-3.5 w-3.5" /> Voice note
+                    <Mic className="h-3.5 w-3.5" /> {t("agentPage.card.voiceNote")}
                   </>
                 )}
               </Button>
@@ -524,7 +518,7 @@ function VisitDetailDialog({
                 className="gap-1.5"
                 onClick={() => docInputRef.current?.click()}
               >
-                <FileText className="h-3.5 w-3.5" /> Document
+                <FileText className="h-3.5 w-3.5" /> {t("agentPage.card.document")}
               </Button>
               <input
                 ref={docInputRef}
@@ -598,7 +592,7 @@ function VisitDetailDialog({
             size="sm"
             onClick={() => onOpenChange(false)}
           >
-            Cancel
+            {t("agentPage.actions.cancel")}
           </Button>
           {visit?.status === "CHECKED_IN" && (
             <Button
@@ -608,7 +602,7 @@ function VisitDetailDialog({
               className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
             >
               <LogOut className="h-3.5 w-3.5" />
-              {saving ? "Saving…" : "Check out & Save"}
+              {saving ? t("agentPage.actions.saving") : t("agentPage.actions.saveAndCheckOut")}
             </Button>
           )}
         </DialogFooter>
@@ -620,6 +614,7 @@ function VisitDetailDialog({
 // ─── Main AgentPage ───────────────────────────────────────────────────────────
 
 export default function AgentPage() {
+  const { t } = useTranslation();
   const user = useAppSelector((s) => s.auth.user);
   const [plans, setPlans] = useState<VisitPlan[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
@@ -647,18 +642,17 @@ export default function AgentPage() {
         setVisits(Array.isArray(data) ? data : []);
       }
     } catch {
-      toast.error("Failed to load visit plans");
+      toast.error(t("agentPage.toasts.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
-    document.title = "My Visits · VMS";
+    document.title = `${t("agentPage.title")} · VMS`;
     load();
-  }, [load]);
+  }, [load, t]);
 
-  // Get GPS position
   function getPos(): Promise<GeolocationCoordinates | null> {
     return new Promise((resolve) => {
       if (!navigator.geolocation) {
@@ -676,7 +670,7 @@ export default function AgentPage() {
   async function handleStart(planId: string) {
     try {
       const { data } = await api.post(`/api/field/visit-plans/${planId}/start`);
-      toast.success("Visit started");
+      toast.success(t("agentPage.toasts.visitStarted"));
       const visit = data?.data?.visit ?? data?.visit;
       if (visit)
         setVisits((v) => [...v.filter((x) => x.visitPlanId !== planId), visit]);
@@ -684,7 +678,7 @@ export default function AgentPage() {
         p.map((x) => (x.id === planId ? { ...x, status: "IN_PROGRESS" } : x)),
       );
     } catch (e: any) {
-      toast.error(e?.response?.data?.error ?? "Failed to start visit");
+      toast.error(e?.response?.data?.error ?? t("agentPage.toasts.visitStartFailed"));
     }
   }
 
@@ -695,7 +689,7 @@ export default function AgentPage() {
         latitude: coords?.latitude,
         longitude: coords?.longitude,
       });
-      toast.success("Checked in");
+      toast.success(t("agentPage.toasts.checkedIn"));
       setVisits((v) =>
         v.map((x) =>
           x.id === visitId
@@ -708,7 +702,7 @@ export default function AgentPage() {
         ),
       );
     } catch (e: any) {
-      toast.error(e?.response?.data?.error ?? "Failed to check in");
+      toast.error(e?.response?.data?.error ?? t("agentPage.toasts.checkInFailed"));
     }
   }
 
@@ -732,7 +726,6 @@ export default function AgentPage() {
         merchandisingScore: data.merchandisingScore,
         notes: data.notes,
       });
-      // Media is stored locally (blob URLs) — in a production setup you'd upload to S3/storage here
 
       const voiceItems = data.media.filter((m) => m.type === "voice");
       for (const item of voiceItems) {
@@ -745,21 +738,24 @@ export default function AgentPage() {
             headers: { "Content-Type": "multipart/form-data" },
             onUploadProgress: (e) => {
               const pct = Math.round((e.loaded * 100) / (e.total ?? 1));
-              toast.loading(`Uploading audio… ${pct}%`, {
+              toast.loading(t("agentPage.card.uploadingAudio", { pct }), {
                 id: `audio-${item.id}`,
               });
             },
           });
-          toast.success("Voice note uploaded", { id: `audio-${item.id}` });
+          toast.success(t("agentPage.toasts.voiceUploaded"), { id: `audio-${item.id}` });
         } catch {
-          toast.error(`Failed to upload voice note: ${item.name}`, {
+          toast.error(t("agentPage.toasts.voiceUploadFailed", { name: item.name }), {
             id: `audio-${item.id}`,
           });
         }
       }
 
       toast.success(
-        `Visit completed — ${data.orderCount} orders, ${data.media.length} media items`,
+        t("agentPage.toasts.visitCompleted", {
+          orders: data.orderCount,
+          media: data.media.length,
+        }),
       );
       setVisits((v) =>
         v.map((x) =>
@@ -778,7 +774,7 @@ export default function AgentPage() {
         ),
       );
     } catch (e: any) {
-      toast.error(e?.response?.data?.error ?? "Failed to check out");
+      toast.error(e?.response?.data?.error ?? t("agentPage.toasts.checkOutFailed"));
     }
   }
 
@@ -809,7 +805,7 @@ export default function AgentPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">My Visits</h2>
+          <h2 className="text-xl font-semibold tracking-tight">{t("agentPage.title")}</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
             {new Date().toLocaleDateString(undefined, {
               weekday: "long",
@@ -821,25 +817,25 @@ export default function AgentPage() {
         </div>
         <Button variant="outline" size="sm" onClick={load} className="gap-1.5">
           <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />{" "}
-          Refresh
+          {t("agentPage.refresh")}
         </Button>
       </div>
 
       {/* Today's stats */}
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: "Total", value: todayStats.total, color: "" },
+          { label: t("agentPage.stats.total"), value: todayStats.total, color: "" },
           {
-            label: "Done",
+            label: t("agentPage.stats.done"),
             value: todayStats.completed,
             color: "text-green-600",
           },
           {
-            label: "Active",
+            label: t("agentPage.stats.active"),
             value: todayStats.inProgress,
             color: "text-blue-600",
           },
-          { label: "Orders", value: todayStats.orders, color: "text-primary" },
+          { label: t("agentPage.stats.orders"), value: todayStats.orders, color: "text-primary" },
         ].map((s) => (
           <Card key={s.label} className="p-3">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
@@ -856,15 +852,15 @@ export default function AgentPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="today">
-            Today
+            {t("agentPage.tabs.today")}
             {todayPlans.length > 0 && (
               <Badge variant="secondary" className="ml-1.5 text-[10px]">
                 {todayPlans.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-          <TabsTrigger value="done">Completed</TabsTrigger>
+          <TabsTrigger value="upcoming">{t("agentPage.tabs.upcoming")}</TabsTrigger>
+          <TabsTrigger value="done">{t("agentPage.tabs.completed")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="today" className="mt-4 space-y-3">
@@ -877,7 +873,7 @@ export default function AgentPage() {
             ))
           ) : todayPlans.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-              No visits planned for today
+              {t("agentPage.empty.today")}
             </div>
           ) : (
             todayPlans
@@ -907,7 +903,7 @@ export default function AgentPage() {
         <TabsContent value="upcoming" className="mt-4 space-y-3">
           {upcomingPlans.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-              No upcoming visits
+              {t("agentPage.empty.upcoming")}
             </div>
           ) : (
             upcomingPlans.map((plan) => (
@@ -930,7 +926,7 @@ export default function AgentPage() {
         <TabsContent value="done" className="mt-4 space-y-3">
           {completedPlans.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-              No completed visits
+              {t("agentPage.empty.completed")}
             </div>
           ) : (
             completedPlans.map((plan) => {
@@ -946,7 +942,7 @@ export default function AgentPage() {
                           ? new Date(v.checkOutAt).toLocaleString()
                           : new Date(plan.plannedDate).toLocaleDateString()}
                         {v &&
-                          ` · ${v.orderCount ?? 0} orders · Score: ${v.merchandisingScore ?? "—"}`}
+                          ` · ${v.orderCount ?? 0} ${t("agentPage.stats.orders").toLowerCase()} · ${t("agentPage.card.score")}: ${v.merchandisingScore ?? "—"}`}
                       </p>
                     </div>
                   </CardContent>
