@@ -22,7 +22,9 @@ export default function DashboardPage() {
   const { t } = useTranslation();
   const { editMode, layout, widgets } = useAppSelector((s) => s.dashboard);
 
-  useEffect(() => { document.title = `${t("dashboard.title")} · VMS`; }, [t]);
+  useEffect(() => {
+    document.title = `${t("dashboard.title")} · VMS`;
+  }, [t]);
 
   const available = ALL_WIDGETS.filter((w) => !widgets.includes(w));
   const visibleLayout = layout.filter((l) => widgets.includes(l.i as never));
@@ -53,7 +55,7 @@ export default function DashboardPage() {
                   )}
                   {available.map((w) => (
                     <DropdownMenuItem key={w} onClick={() => dispatch(addWidget(w))}>
-                      {WIDGETS[w].label}
+                      {t(`dashboard.widgets.${w}`, WIDGETS[w].label)}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
@@ -68,10 +70,11 @@ export default function DashboardPage() {
             variant={editMode ? "default" : "outline"}
             onClick={() => dispatch(setEditMode(!editMode))}
           >
-            {editMode
-              ? <><Check className="h-4 w-4 mr-1" /> {t("dashboard.done")}</>
-              : <><Pencil className="h-4 w-4 mr-1" /> {t("dashboard.edit")}</>
-            }
+            {editMode ? (
+              <><Check className="h-4 w-4 mr-1" /> {t("dashboard.done")}</>
+            ) : (
+              <><Pencil className="h-4 w-4 mr-1" /> {t("dashboard.edit")}</>
+            )}
           </Button>
         </div>
       </div>
@@ -90,7 +93,7 @@ export default function DashboardPage() {
           <div key={w} className="relative">
             {editMode && (
               <button
-                aria-label="Remove widget"
+                aria-label={t("dashboard.removeWidget", "Remove widget")}
                 onClick={() => dispatch(removeWidget(w))}
                 className="no-drag absolute -right-2 -top-2 z-10 h-6 w-6 rounded-full bg-destructive text-destructive-foreground grid place-items-center shadow-md hover:scale-110 transition-transform"
               >
