@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,24 +7,55 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-  DropdownMenuSeparator, DropdownMenuLabel,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Users, Plus, Search, MoreHorizontal, UserCheck, UserX, Trash2,
-  Shield, RefreshCw, Mail, Phone, Key, ShieldCheck, ShieldOff,
-  Crown, Edit2, Download,
+  Users,
+  Plus,
+  Search,
+  MoreHorizontal,
+  UserCheck,
+  UserX,
+  Trash2,
+  Shield,
+  RefreshCw,
+  Mail,
+  Phone,
+  Key,
+  ShieldCheck,
+  ShieldOff,
+  Crown,
+  Download,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
@@ -55,16 +87,22 @@ type User = {
 };
 
 const ROLE_COLORS: Record<Role, string> = {
-  SUPER_ADMIN: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
+  SUPER_ADMIN:
+    "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
   DIRECTOR: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
   MANAGER: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300",
-  WAREHOUSE_STAFF: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
+  WAREHOUSE_STAFF:
+    "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
   AGENT: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-  ACCOUNTANT: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
+  ACCOUNTANT:
+    "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
   SUPPORT: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300",
 };
 
-const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+const STATUS_VARIANT: Record<
+  string,
+  "default" | "secondary" | "destructive" | "outline"
+> = {
   ACTIVE: "default",
   INVITED: "outline",
   SUSPENDED: "destructive",
@@ -72,21 +110,22 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "
 };
 
 export default function UsersPage() {
+  const { t } = useTranslation();
   const currentUser = useAppSelector((s) => s.auth.user);
   const isSuperAdmin = currentUser?.role === "SUPER_ADMIN";
-  const isDirectorLevel = ["SUPER_ADMIN", "DIRECTOR", "MANAGER"].includes(currentUser?.role ?? "");
+  const isDirectorLevel = ["SUPER_ADMIN", "DIRECTOR", "MANAGER"].includes(
+    currentUser?.role ?? "",
+  );
 
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const [exporting, setExporting] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [grantOpen, setGrantOpen] = useState<User | null>(null);
-  const [editUser, setEditUser] = useState<User | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [revokeId, setRevokeId] = useState<string | null>(null);
 
@@ -103,22 +142,26 @@ export default function UsersPage() {
     status: "ACTIVE",
   });
 
-  useEffect(() => { document.title = "Users · VMS"; }, []);
+  useEffect(() => {
+    document.title = "Users · VMS";
+  }, []);
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await api.get("/api/users");
-      const arr = Array.isArray(data) ? data : data?.data ?? [];
+      const arr = Array.isArray(data) ? data : (data?.data ?? []);
       setUsers(arr);
     } catch {
-      toast.error("Failed to load users");
+      toast.error(t("users.toasts.failedToLoad"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
-  useEffect(() => { loadUsers(); }, [loadUsers]);
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
   const filtered = users.filter((u) => {
     if (u.status === "DELETED") return false;
@@ -142,12 +185,18 @@ export default function UsersPage() {
         role: form.role,
         password: form.password,
       });
-      toast.success("User created successfully");
+      toast.success(t("users.toasts.createdSuccess"));
       setCreateOpen(false);
-      setForm({ fullName: "", email: "", phone: "", role: "MANAGER", password: "" });
+      setForm({
+        fullName: "",
+        email: "",
+        phone: "",
+        role: "MANAGER",
+        password: "",
+      });
       loadUsers();
     } catch (e: any) {
-      toast.error(e?.response?.data?.error ?? "Failed to create user");
+      toast.error(e?.response?.data?.error ?? t("users.toasts.failedToCreate"));
     }
   }
 
@@ -161,14 +210,23 @@ export default function UsersPage() {
       setUsers((u) =>
         u.map((x) =>
           x.id === grantOpen.id
-            ? { ...x, role: grantForm.role, status: grantForm.status as User["status"] }
+            ? {
+                ...x,
+                role: grantForm.role,
+                status: grantForm.status as User["status"],
+              }
             : x,
         ),
       );
-      toast.success(`Access granted: ${grantOpen.fullName ?? "User"} is now ${grantForm.role}`);
+      toast.success(
+        t("users.toasts.accessGranted", {
+          name: grantOpen.fullName ?? t("users.dialogs.grant.thisUser"),
+          role: grantForm.role,
+        }),
+      );
       setGrantOpen(null);
     } catch (e: any) {
-      toast.error(e?.response?.data?.error ?? "Failed to grant access");
+      toast.error(e?.response?.data?.error ?? t("users.toasts.failedToGrant"));
     }
   }
 
@@ -179,9 +237,9 @@ export default function UsersPage() {
       setUsers((u) =>
         u.map((x) => (x.id === revokeId ? { ...x, status: "SUSPENDED" } : x)),
       );
-      toast.success("Access revoked — user suspended");
+      toast.success(t("users.toasts.accessRevoked"));
     } catch (e: any) {
-      toast.error(e?.response?.data?.error ?? "Failed to revoke access");
+      toast.error(e?.response?.data?.error ?? t("users.toasts.failedToRevoke"));
     } finally {
       setRevokeId(null);
     }
@@ -190,20 +248,24 @@ export default function UsersPage() {
   async function handleSuspend(userId: string) {
     try {
       await api.post(`/api/users/${userId}/suspend`);
-      setUsers((u) => u.map((x) => (x.id === userId ? { ...x, status: "SUSPENDED" } : x)));
-      toast.success("User suspended");
+      setUsers((u) =>
+        u.map((x) => (x.id === userId ? { ...x, status: "SUSPENDED" } : x)),
+      );
+      toast.success(t("users.toasts.suspended"));
     } catch {
-      toast.error("Failed to suspend user");
+      toast.error(t("users.toasts.failedToSuspend"));
     }
   }
 
   async function handleActivate(userId: string) {
     try {
       await api.post(`/api/users/${userId}/activate`);
-      setUsers((u) => u.map((x) => (x.id === userId ? { ...x, status: "ACTIVE" } : x)));
-      toast.success("User activated");
+      setUsers((u) =>
+        u.map((x) => (x.id === userId ? { ...x, status: "ACTIVE" } : x)),
+      );
+      toast.success(t("users.toasts.activated"));
     } catch {
-      toast.error("Failed to activate user");
+      toast.error(t("users.toasts.failedToActivate"));
     }
   }
 
@@ -212,9 +274,9 @@ export default function UsersPage() {
     try {
       await api.delete(`/api/users/${deleteId}`);
       setUsers((u) => u.filter((x) => x.id !== deleteId));
-      toast.success("User deleted");
+      toast.success(t("users.toasts.deleted"));
     } catch {
-      toast.error("Failed to delete user");
+      toast.error(t("users.toasts.failedToDelete"));
     } finally {
       setDeleteId(null);
     }
@@ -224,18 +286,23 @@ export default function UsersPage() {
     if (exporting) return;
     setExporting(true);
     try {
-      const { data } = await api.get("/api/users/export", { responseType: "blob" });
+      const { data } = await api.get("/api/users/export", {
+        responseType: "blob",
+      });
       const url = window.URL.createObjectURL(new Blob([data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `users_${new Date().toISOString().split("T")[0]}.xlsx`);
+      link.setAttribute(
+        "download",
+        `users_${new Date().toISOString().split("T")[0]}.xlsx`,
+      );
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      toast.success("Export downloaded");
+      toast.success(t("users.toasts.exportDownloaded"));
     } catch {
-      toast.error("Export failed");
+      toast.error(t("users.toasts.exportFailed"));
     } finally {
       setExporting(false);
     }
@@ -245,9 +312,11 @@ export default function UsersPage() {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
         <Shield className="h-12 w-12 text-muted-foreground/40" />
-        <h2 className="text-lg font-semibold">Access Restricted</h2>
+        <h2 className="text-lg font-semibold">
+          {t("users.accessRestricted.title")}
+        </h2>
         <p className="text-sm text-muted-foreground">
-          You need Director-level access or higher to manage users.
+          {t("users.accessRestricted.description")}
         </p>
       </div>
     );
@@ -267,26 +336,43 @@ export default function UsersPage() {
         <div>
           <h2 className="text-xl font-semibold tracking-tight flex items-center gap-2">
             <Users className="h-5 w-5" />
-            User Management
+            {t("users.title")}
           </h2>
           <p className="text-sm text-muted-foreground mt-0.5">
             {isSuperAdmin
-              ? "Super Admin — full control over all users, roles, and access"
-              : "Manage team members and their roles"}
+              ? t("users.descriptions.superAdmin")
+              : t("users.descriptions.default")}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={loadUsers} className="gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={loadUsers}
+            className="gap-1.5"
+          >
             <RefreshCw className="h-3.5 w-3.5" />
-            Refresh
+            {t("users.buttons.refresh")}
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting} className="gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={exporting}
+            className="gap-1.5"
+          >
             <Download className="h-3.5 w-3.5" />
-            {exporting ? "Exporting…" : "Export"}
+            {exporting
+              ? t("users.buttons.exporting")
+              : t("users.buttons.export")}
           </Button>
-          <Button size="sm" onClick={() => setCreateOpen(true)} className="gap-1.5">
+          <Button
+            size="sm"
+            onClick={() => setCreateOpen(true)}
+            className="gap-1.5"
+          >
             <Plus className="h-3.5 w-3.5" />
-            Add User
+            {t("users.buttons.addUser")}
           </Button>
         </div>
       </div>
@@ -294,14 +380,28 @@ export default function UsersPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Total", value: stats.total, color: "" },
-          { label: "Active", value: stats.active, color: "text-green-600" },
-          { label: "Suspended", value: stats.suspended, color: "text-destructive" },
-          { label: "Invited", value: stats.invited, color: "text-muted-foreground" },
+          { label: t("users.stats.total"), value: stats.total, color: "" },
+          {
+            label: t("users.stats.active"),
+            value: stats.active,
+            color: "text-green-600",
+          },
+          {
+            label: t("users.stats.suspended"),
+            value: stats.suspended,
+            color: "text-destructive",
+          },
+          {
+            label: t("users.stats.invited"),
+            value: stats.invited,
+            color: "text-muted-foreground",
+          },
         ].map((s) => (
           <Card key={s.label} className="p-3">
             <div className="text-xs text-muted-foreground">{s.label}</div>
-            <div className={cn("text-2xl font-bold mt-0.5", s.color)}>{s.value}</div>
+            <div className={cn("text-2xl font-bold mt-0.5", s.color)}>
+              {s.value}
+            </div>
           </Card>
         ))}
       </div>
@@ -311,7 +411,7 @@ export default function UsersPage() {
         <div className="relative flex-1 min-w-[200px] max-w-xs">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
-            placeholder="Search users…"
+            placeholder={t("users.filters.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="h-9 pl-8 bg-muted/40"
@@ -319,28 +419,36 @@ export default function UsersPage() {
         </div>
         <Select value={roleFilter} onValueChange={setRoleFilter}>
           <SelectTrigger className="h-9 w-44">
-            <SelectValue placeholder="All roles" />
+            <SelectValue placeholder={t("users.filters.allRoles")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All roles</SelectItem>
+            <SelectItem value="all">{t("users.filters.allRoles")}</SelectItem>
             {ROLES.map((r) => (
-              <SelectItem key={r} value={r}>{r}</SelectItem>
+              <SelectItem key={r} value={r}>
+                {r}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="h-9 w-36">
-            <SelectValue placeholder="All statuses" />
+            <SelectValue placeholder={t("users.filters.allStatuses")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="ACTIVE">Active</SelectItem>
-            <SelectItem value="INVITED">Invited</SelectItem>
-            <SelectItem value="SUSPENDED">Suspended</SelectItem>
+            <SelectItem value="all">
+              {t("users.filters.allStatuses")}
+            </SelectItem>
+            <SelectItem value="ACTIVE">{t("users.filters.active")}</SelectItem>
+            <SelectItem value="INVITED">
+              {t("users.filters.invited")}
+            </SelectItem>
+            <SelectItem value="SUSPENDED">
+              {t("users.filters.suspended")}
+            </SelectItem>
           </SelectContent>
         </Select>
         <span className="text-xs text-muted-foreground ml-auto">
-          {filtered.length} user{filtered.length !== 1 ? "s" : ""}
+          {t("users.filters.userCount", { count: filtered.length })}
         </span>
       </div>
 
@@ -348,19 +456,29 @@ export default function UsersPage() {
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-28 rounded-lg bg-muted/40 animate-pulse" />
+            <div
+              key={i}
+              className="h-28 rounded-lg bg-muted/40 animate-pulse"
+            />
           ))}
         </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border p-12 text-center">
           <Users className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">No users found</p>
+          <p className="text-sm text-muted-foreground">
+            {t("users.noUsersFound")}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {filtered.map((user) => {
             const initials = user.fullName
-              ? user.fullName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+              ? user.fullName
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")
+                  .toUpperCase()
+                  .slice(0, 2)
               : (user.email?.[0] ?? "U").toUpperCase();
             const isSelf = user.id === currentUser?.id;
 
@@ -382,10 +500,15 @@ export default function UsersPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-medium text-sm truncate">
-                          {user.fullName ?? "Unnamed"}
+                          {user.fullName ?? t("users.card.unnamed")}
                         </span>
                         {isSelf && (
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">You</Badge>
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] px-1.5 py-0"
+                          >
+                            {t("users.card.you")}
+                          </Badge>
                         )}
                         {user.role === "SUPER_ADMIN" && (
                           <Crown className="h-3.5 w-3.5 text-purple-500 shrink-0" />
@@ -394,20 +517,32 @@ export default function UsersPage() {
                       {user.email && (
                         <div className="flex items-center gap-1 mt-0.5">
                           <Mail className="h-3 w-3 text-muted-foreground shrink-0" />
-                          <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+                          <span className="text-xs text-muted-foreground truncate">
+                            {user.email}
+                          </span>
                         </div>
                       )}
                       {user.phone && (
                         <div className="flex items-center gap-1">
                           <Phone className="h-3 w-3 text-muted-foreground shrink-0" />
-                          <span className="text-xs text-muted-foreground">{user.phone}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {user.phone}
+                          </span>
                         </div>
                       )}
                       <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                        <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium", ROLE_COLORS[user.role])}>
+                        <span
+                          className={cn(
+                            "text-[10px] px-2 py-0.5 rounded-full font-medium",
+                            ROLE_COLORS[user.role],
+                          )}
+                        >
                           {user.role}
                         </span>
-                        <Badge variant={STATUS_VARIANT[user.status] ?? "secondary"} className="text-[10px]">
+                        <Badge
+                          variant={STATUS_VARIANT[user.status] ?? "secondary"}
+                          className="text-[10px]"
+                        >
                           {user.status}
                         </Badge>
                       </div>
@@ -417,7 +552,11 @@ export default function UsersPage() {
                     {!isSelf && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 shrink-0"
+                          >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -426,17 +565,20 @@ export default function UsersPage() {
                           {isSuperAdmin && (
                             <>
                               <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">
-                                Super Admin Actions
+                                {t("users.menu.superAdminActions")}
                               </DropdownMenuLabel>
                               <DropdownMenuItem
                                 onClick={() => {
-                                  setGrantForm({ role: user.role, status: user.status });
+                                  setGrantForm({
+                                    role: user.role,
+                                    status: user.status,
+                                  });
                                   setGrantOpen(user);
                                 }}
                                 className="gap-2"
                               >
                                 <ShieldCheck className="h-3.5 w-3.5 text-green-600" />
-                                Grant / Change Access
+                                {t("users.menu.grantChangeAccess")}
                               </DropdownMenuItem>
                               {user.status !== "SUSPENDED" && (
                                 <DropdownMenuItem
@@ -444,7 +586,7 @@ export default function UsersPage() {
                                   className="gap-2 text-destructive focus:text-destructive"
                                 >
                                   <ShieldOff className="h-3.5 w-3.5" />
-                                  Revoke Access
+                                  {t("users.menu.revokeAccess")}
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuSeparator />
@@ -452,18 +594,22 @@ export default function UsersPage() {
                           )}
 
                           {/* Status actions */}
-                          {user.status === "ACTIVE" || user.status === "INVITED" ? (
+                          {user.status === "ACTIVE" ||
+                          user.status === "INVITED" ? (
                             <DropdownMenuItem
                               onClick={() => handleSuspend(user.id)}
                               className="gap-2 text-orange-600 focus:text-orange-600"
                             >
                               <UserX className="h-3.5 w-3.5" />
-                              Suspend
+                              {t("users.menu.suspend")}
                             </DropdownMenuItem>
                           ) : user.status === "SUSPENDED" ? (
-                            <DropdownMenuItem onClick={() => handleActivate(user.id)} className="gap-2">
+                            <DropdownMenuItem
+                              onClick={() => handleActivate(user.id)}
+                              className="gap-2"
+                            >
                               <UserCheck className="h-3.5 w-3.5" />
-                              Activate
+                              {t("users.menu.activate")}
                             </DropdownMenuItem>
                           ) : null}
 
@@ -475,7 +621,7 @@ export default function UsersPage() {
                                 onClick={() => setDeleteId(user.id)}
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
-                                Delete User
+                                {t("users.menu.deleteUser")}
                               </DropdownMenuItem>
                             </>
                           )}
@@ -496,99 +642,134 @@ export default function UsersPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
-              Add New User
+              {t("users.dialogs.create.title")}
             </DialogTitle>
             <DialogDescription>
-              Create a new user account. They will receive an invitation to set up their profile.
+              {t("users.dialogs.create.description")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div className="space-y-1.5">
-              <Label>Full Name <span className="text-destructive">*</span></Label>
+              <Label>
+                {t("users.dialogs.create.fullName")}{" "}
+                <span className="text-destructive">*</span>
+              </Label>
               <Input
                 value={form.fullName}
-                onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
-                placeholder="John Doe"
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, fullName: e.target.value }))
+                }
+                placeholder={t("users.dialogs.create.fullNamePlaceholder")}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Email</Label>
+                <Label>{t("users.dialogs.create.email")}</Label>
                 <Input
                   type="email"
                   value={form.email}
-                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                  placeholder="john@example.com"
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, email: e.target.value }))
+                  }
+                  placeholder={t("users.dialogs.create.emailPlaceholder")}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Phone</Label>
+                <Label>{t("users.dialogs.create.phone")}</Label>
                 <Input
                   value={form.phone}
-                  onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                  placeholder="+998 90 123 4567"
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, phone: e.target.value }))
+                  }
+                  placeholder={t("users.dialogs.create.phonePlaceholder")}
                 />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Role</Label>
+              <Label>{t("users.dialogs.create.role")}</Label>
               <Select
                 value={form.role}
-                onValueChange={(v) => setForm((f) => ({ ...f, role: v as Role }))}
+                onValueChange={(v) =>
+                  setForm((f) => ({ ...f, role: v as Role }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {ROLES.filter((r) => isSuperAdmin || r !== "SUPER_ADMIN").map((r) => (
-                    <SelectItem key={r} value={r}>
-                      <span className={cn("text-xs px-1.5 py-0.5 rounded-full mr-2", ROLE_COLORS[r])}>
-                        {r}
-                      </span>
-                    </SelectItem>
-                  ))}
+                  {ROLES.filter((r) => isSuperAdmin || r !== "SUPER_ADMIN").map(
+                    (r) => (
+                      <SelectItem key={r} value={r}>
+                        <span
+                          className={cn(
+                            "text-xs px-1.5 py-0.5 rounded-full mr-2",
+                            ROLE_COLORS[r],
+                          )}
+                        >
+                          {r}
+                        </span>
+                      </SelectItem>
+                    ),
+                  )}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Password <span className="text-destructive">*</span></Label>
+              <Label>
+                {t("users.dialogs.create.password")}{" "}
+                <span className="text-destructive">*</span>
+              </Label>
               <Input
                 type="password"
                 value={form.password}
-                onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                placeholder="Temporary password"
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, password: e.target.value }))
+                }
+                placeholder={t("users.dialogs.create.passwordPlaceholder")}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreate} disabled={!form.fullName || !form.password}>
-              Create User
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>
+              {t("users.dialogs.create.cancel")}
+            </Button>
+            <Button
+              onClick={handleCreate}
+              disabled={!form.fullName || !form.password}
+            >
+              {t("users.dialogs.create.submit")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Grant Access dialog (Super Admin only) */}
-      <Dialog open={grantOpen != null} onOpenChange={(o) => !o && setGrantOpen(null)}>
+      <Dialog
+        open={grantOpen != null}
+        onOpenChange={(o) => !o && setGrantOpen(null)}
+      >
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Key className="h-4 w-4 text-primary" />
-              Grant / Change Access
+              {t("users.dialogs.grant.title")}
             </DialogTitle>
             <DialogDescription>
-              Change role and status for{" "}
-              <strong>{grantOpen?.fullName ?? "this user"}</strong>.
-              This takes effect immediately and will be logged.
+              {t("users.dialogs.grant.descriptionPrefix")}{" "}
+              <strong>
+                {grantOpen?.fullName ?? t("users.dialogs.grant.thisUser")}
+              </strong>
+              {t("users.dialogs.grant.descriptionSuffix")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label>New Role</Label>
+              <Label>{t("users.dialogs.grant.newRole")}</Label>
               <Select
                 value={grantForm.role}
-                onValueChange={(v) => setGrantForm((f) => ({ ...f, role: v as Role }))}
+                onValueChange={(v) =>
+                  setGrantForm((f) => ({ ...f, role: v as Role }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -597,7 +778,9 @@ export default function UsersPage() {
                   {ROLES.map((r) => (
                     <SelectItem key={r} value={r}>
                       <div className="flex items-center gap-2">
-                        {r === "SUPER_ADMIN" && <Crown className="h-3.5 w-3.5 text-purple-500" />}
+                        {r === "SUPER_ADMIN" && (
+                          <Crown className="h-3.5 w-3.5 text-purple-500" />
+                        )}
                         <span>{r}</span>
                       </div>
                     </SelectItem>
@@ -606,78 +789,99 @@ export default function UsersPage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Account Status</Label>
+              <Label>{t("users.dialogs.grant.accountStatus")}</Label>
               <Select
                 value={grantForm.status}
-                onValueChange={(v) => setGrantForm((f) => ({ ...f, status: v }))}
+                onValueChange={(v) =>
+                  setGrantForm((f) => ({ ...f, status: v }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ACTIVE">Active — can log in</SelectItem>
-                  <SelectItem value="INVITED">Invited — pending setup</SelectItem>
-                  <SelectItem value="SUSPENDED">Suspended — blocked</SelectItem>
+                  <SelectItem value="ACTIVE">
+                    {t("users.dialogs.grant.statusActive")}
+                  </SelectItem>
+                  <SelectItem value="INVITED">
+                    {t("users.dialogs.grant.statusInvited")}
+                  </SelectItem>
+                  <SelectItem value="SUSPENDED">
+                    {t("users.dialogs.grant.statusSuspended")}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
             {grantForm.role === "SUPER_ADMIN" && (
               <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
-                ⚠️ Granting SUPER_ADMIN gives full system access including user management, permissions, and all data.
+                {t("users.dialogs.grant.superAdminWarning")}
               </div>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setGrantOpen(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setGrantOpen(null)}>
+              {t("users.dialogs.grant.cancel")}
+            </Button>
             <Button onClick={handleGrantAccess} className="gap-1.5">
               <ShieldCheck className="h-3.5 w-3.5" />
-              Apply Changes
+              {t("users.dialogs.grant.applyChanges")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Revoke access confirmation */}
-      <AlertDialog open={revokeId != null} onOpenChange={(o) => !o && setRevokeId(null)}>
+      <AlertDialog
+        open={revokeId != null}
+        onOpenChange={(o) => !o && setRevokeId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <ShieldOff className="h-4 w-4 text-destructive" />
-              Revoke Access?
+              {t("users.dialogs.revoke.title")}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This will immediately suspend the user and terminate all their active sessions.
-              They will not be able to log in until access is restored.
+              {t("users.dialogs.revoke.description")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>
+              {t("users.dialogs.revoke.cancel")}
+            </AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={handleRevokeAccess}
             >
-              Revoke Access
+              {t("users.dialogs.revoke.confirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       {/* Delete confirmation */}
-      <AlertDialog open={deleteId != null} onOpenChange={(o) => !o && setDeleteId(null)}>
+      <AlertDialog
+        open={deleteId != null}
+        onOpenChange={(o) => !o && setDeleteId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete user?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("users.dialogs.delete.title")}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the user account. This action cannot be undone.
+              {t("users.dialogs.delete.description")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>
+              {t("users.dialogs.delete.cancel")}
+            </AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={handleDelete}
             >
-              Delete
+              {t("users.dialogs.delete.confirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

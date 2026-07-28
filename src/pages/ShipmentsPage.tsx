@@ -1,5 +1,6 @@
 import { GenericPage } from "@/components/data/GenericPage";
 import { UuidCell } from "@/components/ui/uuid-cell";
+import { useTranslation } from "react-i18next";
 
 // Backend: createShipment({
 //   tenantId*, externalOrderId* (used as IntegrationOutbox key),
@@ -7,60 +8,62 @@ import { UuidCell } from "@/components/ui/uuid-cell";
 // })
 // Stored as IntegrationOutbox with topic="SHIPMENT"
 export default function ShipmentsPage() {
+  const { t } = useTranslation();
+
   return (
     <GenericPage
-      title="Shipments"
-      description="Outbound shipments"
+      title={t("shipments.title")}
+      description={t("shipments.description")}
       path="/api/shipments/shipments"
       exportUrl="/api/shipments/export"
       deletable={false}
       columns={[
         {
           key: "id",
-          label: "ID",
+          label: t("shipments.columns.id"),
           render: (v: any) => <UuidCell value={String(v)} />,
         },
-        { key: "topic", label: "Type", type: "badge" },
+        { key: "topic", label: t("shipments.columns.type"), type: "badge" },
         {
           key: "payload",
-          label: "Tracking",
+          label: t("shipments.columns.tracking"),
           render: (v: any) => (v as any)?.trackingNumber ?? "—",
         },
         {
           key: "payload",
-          label: "Status",
+          label: t("shipments.columns.status"),
           render: (v: any) => (v as any)?.status ?? "—",
         },
         {
           key: "createdAt",
-          label: "Created",
+          label: t("shipments.columns.created"),
           render: (v: any) => (v ? new Date(v).toLocaleDateString() : "—"),
         },
       ]}
       createConfig={{
-        title: "Shipment",
+        title: t("shipments.create.title"),
         postUrl: "/api/shipments/shipments",
         fields: [
           {
             key: "trackingNumber",
-            label: "Tracking Number",
+            label: t("shipments.create.trackingNumber"),
             required: true,
-            placeholder: "e.g. TRK-123456789",
+            placeholder: t("shipments.create.trackingNumberPlaceholder"),
           },
           {
             key: "orderId",
-            label: "Linked Order",
+            label: t("shipments.create.linkedOrder"),
             type: "fetchselect",
             fetchUrl: "/api/orders",
             labelKey: "externalOrderId",
             searchKeys: [],
-            placeholder: "Link to order (optional)…",
+            placeholder: t("shipments.create.linkedOrderPlaceholder"),
           },
           {
             key: "shippingAddress",
-            label: "Shipping Address",
+            label: t("shipments.create.shippingAddress"),
             type: "textarea",
-            placeholder: "Recipient full address",
+            placeholder: t("shipments.create.shippingAddressPlaceholder"),
           },
         ],
         // externalOrderId is required as the outbox key — auto-generate if not linked
